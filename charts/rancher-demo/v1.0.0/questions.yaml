@@ -1,0 +1,5 @@
+- variable: ingress.enabled
+  label: "Enable Ingress"
+  type: boolean
+  default: false
+  required: true
