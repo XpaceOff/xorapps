@@ -1,11 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "rancher-demo.fullname" . }}
+  name: {{ .Values.name }}
   labels:
     {{- include "rancher-demo.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "rancher-demo.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
