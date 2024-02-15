@@ -1,7 +1,9 @@
+{{- $fullName := include "rancher-demo.fullname" . -}}
+
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.name }}-cip
+  name: {{ $fullName }}-cip
   labels:
     {{- include "rancher-demo.labels" . | nindent 4 }}
 spec:
