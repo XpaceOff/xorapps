@@ -31,6 +31,7 @@ questions:
     type: boolean
     default: false
     required: true
+    group: "Gateway/Ingress"
     show_subquestion_if: true
     subquestions:
     - variable: ingress.hosts[0]

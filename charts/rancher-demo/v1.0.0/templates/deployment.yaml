@@ -1,7 +1,9 @@
+{{- $fullName := include "rancher-demo.fullname" . -}}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.name }}
+  name: {{ $fullName }}
   labels:
     {{- include "rancher-demo.labels" . | nindent 4 }}
 spec:

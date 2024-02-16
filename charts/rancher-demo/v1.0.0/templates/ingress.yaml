@@ -15,7 +15,7 @@ apiVersion: extensions/v1beta1
 {{- end }}
 kind: Ingress
 metadata:
-  name: {{ .Values.name }}-ingress
+  name: {{ $fullName }}-in
   labels:
     {{- include "rancher-demo.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
