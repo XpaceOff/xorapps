@@ -1,6 +1,42 @@
 questions:
+
+  - variable: replicaCount
+    label: "Replica Count"
+    type: int
+    default: 1
+    required: true
+    group: "Container Images"
+
+  - variable: defaultImage
+    default: true
+    description: "Use default Docker image"
+    label: "Use Default Image"
+    type: boolean
+    show_subquestion_if: false
+    group: "Container Images"
+    subquestions:
+    - variable: image.repository
+      default: "bashofmann/rancher-demo"
+      description: "Docker image repository"
+      type: string
+      label: "Image Repository"
+    - variable: image.tag
+      default: "1.0.0"
+      description: "Docker image tag"
+      type: string
+      label: "Image Tag"
+
   - variable: ingress.enabled
     label: "Enable Ingress"
     type: boolean
     default: false
     required: true
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.hosts[0]
+      default: ""
+      required: true
+      description: "Hostname to connect to your app"
+      type: hostname
+      label: "Hostname"
+
