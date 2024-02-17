@@ -21,18 +21,15 @@ service:
 
 ingress:
   enabled: false
+  tlsEnabled: false
   className: "traefik"
   annotations:
     kubernetes.io/ingress.class: traefik
   hosts:
-    - host: "" 
+    - host: "" # Change this with the hostname you will use to reach your app.
       paths:
         - path: /
           pathType: Prefix
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
 nodeSelector: {}
 
