@@ -34,7 +34,7 @@ questions:
     group: "Gateway/Ingress"
     show_subquestion_if: true
     subquestions:
-    - variable: ingress.hosts[0]
+    - variable: index ingress.hosts 0 host
       default: ""
       required: true
       description: "Hostname to connect to your app"
