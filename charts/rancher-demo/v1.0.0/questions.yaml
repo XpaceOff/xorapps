@@ -45,7 +45,7 @@ questions:
       type: boolean
       default: false
       required: true
-    - variable: ingress.annotations.issuer
+    - variable: ingress.issuer
       default: ""
       required: false
       description: "Name of issuer. This will issue a certificate to your website" 
