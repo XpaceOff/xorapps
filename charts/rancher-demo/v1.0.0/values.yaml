@@ -23,6 +23,7 @@ ingress:
   enabled: false
   tlsEnabled: false
   className: "traefik"
+  issuer: ""
   annotations:
     kubernetes.io/ingress.class: traefik
   hosts:

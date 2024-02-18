@@ -18,15 +18,22 @@ metadata:
   name: {{ $fullName }}-in
   labels:
     {{- include "rancher-demo.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+  {{- if .Values.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
+  {{- if .Values.ingress.issuer }}
+    cert-manager.io/issuer: {{ .Values.ingress.issuer }}
+  {{- end }}
+  {{- range $key, $value := .Values.ingress.annotations }}
+  {{- if $value }}
+    {{ $key }}: {{ $value }} 
+  {{- end }}
+  {{- end }}
   {{- end }}
 spec:
-  {{- if .Values.ingress.tlsEnabled -}}
+  {{- if .Values.ingress.tlsEnabled }}
   tls:
     - hosts:
-        - {{ .Values.ingress.hosts | first }}
+        - {{ index .Values.ingress.hosts 0 "host" }}
       secretName: {{ $fullName }}-tls
   {{- end }}
   ingressClassName: {{ .Values.ingress.ingressClass }}

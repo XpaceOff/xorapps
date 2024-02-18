@@ -40,4 +40,10 @@ questions:
       description: "Hostname to connect to your app"
       type: hostname
       label: "Hostname"
+    - variable: ingress.annotations.issuer
+      default: ""
+      required: false
+      description: "Name of issuer. This will issue a certificate to your website" 
+      type: string
+      label: "Issuer"
 
