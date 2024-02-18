@@ -30,7 +30,7 @@ metadata:
   {{- end }}
   {{- end }}
 spec:
-  {{- if .Values.ingress.tlsEnabled }}
+  {{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer }}
   tls:
     - hosts:
         - {{ index .Values.ingress.hosts 0 "host" }}
