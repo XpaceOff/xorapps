@@ -1,0 +1,17 @@
+{{- $fullName := include "rancher-demo.fullname" . -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ext-{{ $fullName }}
+  labels:
+    {{- include "external-app-lb.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: {{ .Values.service.portName }}
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: {{ .Values.service.protocol }}
+  selector:
+    {{- include "external-app-lb.selectorLabels" . | nindent 4 }}

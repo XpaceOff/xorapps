@@ -1,0 +1,34 @@
+# Default values for external-app-lb.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: rancher-demo
+replicaCount: 1
+
+podAnnotations: {}
+podLabels: {}
+
+endpoint:
+  extIP: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  portName: ""
+  targerPort: {} 
+  protocol: TCP
+  isBackendHttps: false
+  skipCertVerify: false
+
+ingress:
+  enabled: false
+  tlsEnabled: false
+  className: "traefik"
+  issuer: ""
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  hosts:
+    - host: ""
+      paths:
+        - path: /
+          pathType: Prefix
