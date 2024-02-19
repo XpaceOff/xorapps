@@ -9,8 +9,10 @@ replicaCount: 1
 podAnnotations: {}
 podLabels: {}
 
-endpoint:
-  extIP: {}
+externalApp:
+  ip: {}
+  isHttps: false
+  skipCertVerify: false
 
 service:
   type: ClusterIP
@@ -18,8 +20,6 @@ service:
   portName: ""
   targerPort: {} 
   protocol: TCP
-  isBackendHttps: false
-  skipCertVerify: false
 
 ingress:
   tlsEnabled: false

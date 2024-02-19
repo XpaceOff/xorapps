@@ -5,6 +5,15 @@ kind: Service
 metadata:
   name: {{ $fullName }}
   namespace: {{ .Values.namespace }}
+  {{- if or .Values.externalApp.isHttps .Values.externalApp.skipCertVerify }}
+  annotations:
+  {{- if .Values.externalApp.isHttps }}
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+  {{- end }}
+  {{- if .Values.externalApp.skipCertVerify }}
+    traefik.ingress.kubernetes.io/service.serverstransport: {{ .Values.namespace }}-{{ $fullName }}-tst@kubernetescrd
+  {{- end }}
+  {{- end }}
   labels:
     {{- include "external-app-lb.labels" . | nindent 4 }}
 spec:
