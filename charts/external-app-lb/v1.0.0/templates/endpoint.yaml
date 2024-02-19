@@ -1,14 +1,14 @@
-{{- $fullName := include "rancher-demo.fullname" . -}}
+{{- $fullName := include "external-app-lb.fullname" . -}}
 
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: ext-{{ $fullName }}
+  name: {{ $fullName }}
   # namespace: default
 subsets:
 - addresses:
   - ip: {{ .Values.endpoint.extIP }}
   ports:
   - name: {{ .Values.service.portName }}
-    port: {{ .Values.service.port }}
+    port: {{ .Values.service.targetPort }}
     protocol: {{ .Values.service.protocol }}

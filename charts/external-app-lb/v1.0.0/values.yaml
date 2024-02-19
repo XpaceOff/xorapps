@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-name: rancher-demo
+name: external-app-lb
 replicaCount: 1
 
 podAnnotations: {}
@@ -21,12 +21,10 @@ service:
   skipCertVerify: false
 
 ingress:
-  enabled: false
   tlsEnabled: false
   className: "traefik"
   issuer: ""
-  annotations:
-    kubernetes.io/ingress.class: traefik
+  annotations: {}
   hosts:
     - host: ""
       paths:
