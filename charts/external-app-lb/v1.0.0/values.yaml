@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 
 name: external-app-lb
+namespace: default
 replicaCount: 1
 
 podAnnotations: {}
@@ -22,6 +23,7 @@ service:
 
 ingress:
   tlsEnabled: false
+  forceHttps: false
   className: "traefik"
   issuer: ""
   annotations: {}

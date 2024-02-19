@@ -15,22 +15,24 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: {{ $fullName }}-in
+  namespace: {{ .Values.namespace }}
   labels:
     {{- include "external-app-lb.labels" . | nindent 4 }}
-  {{- if .Values.ingress.annotations }}
+  {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
   annotations:
   {{- if .Values.ingress.issuer }}
     cert-manager.io/issuer: {{ .Values.ingress.issuer }}
   {{- end }}
+  {{- if .Values.ingress.forceHttps }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Values.namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
+  {{- end }}
+  {{- if .Values.ingress.annotations }}
   {{- range $key, $value := .Values.ingress.annotations }}
   {{- if $value }}
     {{ $key }}: {{ $value }} 
   {{- end }}
   {{- end }}
-  {{- else }}
-  {{- if .Values.ingress.issuer }}
-  annotations:
-    cert-manager.io/issuer: {{ .Values.ingress.issuer }}
+
   {{- end }}
   {{- end }}
 spec:

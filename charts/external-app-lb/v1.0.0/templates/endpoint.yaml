@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Endpoints
 metadata:
   name: {{ $fullName }}
-  # namespace: default
+  namespace: {{ .Values.namespace }}
 subsets:
 - addresses:
   - ip: {{ .Values.endpoint.extIP }}
