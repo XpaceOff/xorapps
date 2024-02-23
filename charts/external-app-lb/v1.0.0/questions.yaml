@@ -1,0 +1,26 @@
+questions:
+  - variable: externalApp.ip
+    label: "IP"
+    type: hostname 
+    required: true
+    description: "IP of your application/website"
+    group: "External App"
+  - variable: service.targetPort
+    label: "port"
+    type: int
+    required: true
+    description: "port your app/website listens on"
+    group: "External App"
+  - variable: externalApp.isHttps
+    label: "Is your website listening on HTTPS?"
+    default: false
+    description: "If your website is listening on HTTPS then you need to enable this, if not Traefik will fail redirecting the packages"
+    type: boolean
+    show_subquestion_if: true
+    group: "External App"
+    subquestions:
+    - variable: externalApp.skipCertVerify
+      label: "Skip website's certificate verification"
+      default: false
+      type: boolean
+      description: "If your website has a self signed certificate, you will need to enabled this"
