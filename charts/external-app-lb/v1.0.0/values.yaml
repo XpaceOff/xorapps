@@ -26,9 +26,7 @@ ingress:
   forceHttps: false
   className: "traefik"
   issuer: ""
+  hostname: "" # www.example-app.io
+  path: /
+  pathType: Prefix
   annotations: {}
-  hosts:
-    - host: ""
-      paths:
-        - path: /
-          pathType: Prefix

@@ -20,7 +20,7 @@ helm install grafana charts/external-app-lb/v1.0.0 \
 --set service.portName=grafana \
 --set service.port=80 \
 --set service.targetPort=30002 \
---set ingress.hosts[0].host=ext-grafana.xpaceoff.com,ingress.hosts[0].paths[0].path=/,ingress.hosts[0].paths[0].pathType=Prefix
+--set ingress.hostsname=ext-grafana.xpaceoff.com
 ```
 
 Create an ingress for a website created outside of the Kubernetes cluster.
@@ -34,7 +34,7 @@ helm install grafana charts/external-app-lb/v1.0.0 \
 --set service.targetPort=30002 \
 --set ingress.tlsEnabled=true \
 --set ingress.issuer=letsencrypt-staging \
---set ingress.hosts[0].host=ext-grafana.xpaceoff.com,ingress.hosts[0].paths[0].path=/,ingress.hosts[0].paths[0].pathType=Prefix
+--set ingress.hostsname=ext-grafana.xpaceoff.com
 ```
 
 Create an ingress for a website created outside of the Kubernetes cluster.
@@ -49,7 +49,7 @@ helm install grafana charts/external-app-lb/v1.0.0 \
 --set ingress.tlsEnabled=true \
 --set ingress.issuer=letsencrypt-staging \
 --set ingress.forceHttps=true \
---set ingress.hosts[0].host=ext-grafana.xpaceoff.com,ingress.hosts[0].paths[0].path=/,ingress.hosts[0].paths[0].pathType=Prefix
+--set ingress.hostsname=ext-grafana.xpaceoff.com
 ```
 
 Create an ingress for a website created outside of the Kubernetes cluster.
@@ -67,7 +67,7 @@ helm install synology charts/external-app-lb/v1.0.0 \
 --set ingress.tlsEnabled=true \
 --set ingress.issuer=letsencrypt-staging \
 --set ingress.forceHttps=true \
---set ingress.hosts[0].host=ext-synology.xpaceoff.com,ingress.hosts[0].paths[0].path=/,ingress.hosts[0].paths[0].pathType=Prefix \
+--set ingress.hostsname=ext-synology.xpaceoff.com
 ```
 
 ## Manual uninstall examples
