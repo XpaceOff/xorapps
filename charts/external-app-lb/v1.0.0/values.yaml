@@ -23,7 +23,7 @@ service:
 
 ingress:
   tlsEnabled: false
-  forceHttps: false
+  forceHttps: true
   className: "traefik"
   issuer: ""
   hostname: "" # www.example-app.io

@@ -28,7 +28,7 @@ questions:
   - variable: service.portName
     label: "Port Name"
     type: string
-    required: false
+    required: true
     description: "port name of your service"
     group: "Service"
 
@@ -58,4 +58,11 @@ questions:
     type: string
     label: "Issuer"
     show_if: "ingress.tlsEnabled=true"
+    group: "Gateway/Ingress"
+  - variable: ingress.forceHttps
+    label: "Use HTTPS only"
+    default: true
+    required: true
+    type: boolean
+    description: "If enabled, all requests to http will be redirected to https"
     group: "Gateway/Ingress"
