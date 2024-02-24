@@ -17,8 +17,8 @@ externalApp:
 service:
   type: ClusterIP
   port: 80
-  portName: ""
-  targerPort: {} 
+  portName: "default"
+  targerPort: ""
   protocol: TCP
 
 ingress:
