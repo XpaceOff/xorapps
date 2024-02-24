@@ -15,7 +15,6 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: {{ $fullName }}-in
-  namespace: {{ .Values.namespace }}
   labels:
     {{- include "external-app-lb.labels" . | nindent 4 }}
   {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}

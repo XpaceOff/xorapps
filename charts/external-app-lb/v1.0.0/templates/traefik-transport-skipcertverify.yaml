@@ -4,7 +4,6 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: ServersTransport
 metadata:
   name: {{ $fullName }}-tst # tst: Traefik Servers Transport
-  namespace: {{ .Values.namespace }}
 spec:
   insecureSkipVerify: true # Skip SSL verification
 {{- end }}

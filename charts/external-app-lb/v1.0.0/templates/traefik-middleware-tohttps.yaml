@@ -4,7 +4,6 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: {{ $fullName }}-tm-tohttps
-  namespace: {{ .Values.namespace }}
 spec:
   redirectScheme:
     scheme: https
