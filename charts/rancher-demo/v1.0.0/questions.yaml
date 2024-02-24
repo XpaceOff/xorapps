@@ -52,3 +52,9 @@ questions:
       type: string
       label: "Issuer"
       show_if: "ingress.tlsEnabled=true"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
