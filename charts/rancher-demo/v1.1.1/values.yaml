@@ -25,8 +25,7 @@ ingress:
   forceHttps: true
   className: "traefik"
   issuer: ""
-  annotations:
-    kubernetes.io/ingress.class: traefik
+  annotations: {}
   hosts:
     - host: "" # Change this with the hostname you will use to reach your app.
       paths:
