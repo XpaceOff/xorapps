@@ -23,7 +23,7 @@ metadata:
     cert-manager.io/issuer: {{ .Values.ingress.issuer }}
   {{- end }}
   {{- if .Values.ingress.forceHttps }}
-    traefik.ingress.kubernetes.io/router.middlewares: {{ .Values.namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
   {{- end }}
   {{- if .Values.ingress.annotations }}
   {{- range $key, $value := .Values.ingress.annotations }}

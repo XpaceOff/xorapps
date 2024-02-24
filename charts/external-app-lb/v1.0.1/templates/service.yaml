@@ -10,7 +10,7 @@ metadata:
     traefik.ingress.kubernetes.io/service.serversscheme: https
   {{- end }}
   {{- if .Values.externalApp.skipCertVerify }}
-    traefik.ingress.kubernetes.io/service.serverstransport: {{ .Values.namespace }}-{{ $fullName }}-tst@kubernetescrd
+    traefik.ingress.kubernetes.io/service.serverstransport: {{ .Release.Namespace }}-{{ $fullName }}-tst@kubernetescrd
   {{- end }}
   {{- end }}
   labels:
