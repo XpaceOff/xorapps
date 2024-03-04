@@ -36,21 +36,19 @@ spec:
   {{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer }}
   tls:
     - hosts:
-        - {{ index .Values.ingress.hosts 0 "host" }}
+        - {{ index .Values.ingress.hostUrl }}
       secretName: {{ $fullName }}-tls
   {{- end }}
   {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   rules:
-    {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: {{ .Values.ingress.hostUrl }}
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
+          - path: {{ .Values.ingress.hostPath }} 
             {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
-            pathType: {{ .pathType }}
+            pathType: {{ .Values.ingress.hostPath }}
             {{- end }}
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
@@ -62,6 +60,4 @@ spec:
               serviceName: {{ $fullName }}-cip
               servicePort: {{ $svcPort }}
               {{- end }}
-          {{- end }}
-    {{- end }}
 {{- end }}
