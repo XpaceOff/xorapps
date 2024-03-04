@@ -1,0 +1,17 @@
+{{- $fullName := include "directus.fullname" . -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "directus.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: 8055
+      protocol: TCP
+  selector:
+    {{- include "directus.selectorLabels" . | nindent 4 }}
