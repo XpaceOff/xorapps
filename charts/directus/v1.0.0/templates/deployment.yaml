@@ -24,6 +24,22 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+
+      initContainers:
+        - command:
+          - /bin/sh
+          - '-c'
+          - mkdir -p /tmp_mount/{{ $fullName }}
+          # - mkdir -p /tmp_mount/{{ $fullName }}/database && mkdir -p /tmp_mount/{{ $fullName }}/uploads && mkdir -p /tmp_mount/{{ $fullName }}/extensions
+        image: busybox:1.35.0
+        imagePullPolicy: IfNotPresent
+        name: prepare-nfs-dirs
+        {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+        volumeMounts:
+          - mountPath: /tmp_mount
+            name: vol-{{ $fullName }}-nfs
+        {{- end }}
+
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
