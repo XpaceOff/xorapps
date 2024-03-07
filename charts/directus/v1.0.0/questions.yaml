@@ -1,0 +1,26 @@
+questions:
+
+
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: storage.type
+    label: "Storage Type"
+    type: enum
+    required: true
+    options:
+      - NFS
+    group: "Storage"
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN of the NFS server."
+    type: string
+    required: true
+    group: "Storage"
+    show_if: "storage.type=NFS"
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path in the NFS server to save data to."
+    type: string
+    required: true
+    show_if: "storage.type=NFS"
+    group: "Storage"
