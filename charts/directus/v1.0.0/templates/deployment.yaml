@@ -54,18 +54,66 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
 
+          env:
+            - name: KEY
+              value: {{ .Values.envVars.directus.key }}
+            - name: SECRET
+              value: {{ .Values.envVars.directus.secret }}
+
+            - name: ADMIN_EMAIL
+              value: {{ .Values.envVars.directus.adminEmail }}
+            - name: ADMIN_PASSWORD
+              value: {{ .Values.envVars.directus.adminPassword }}
+
+            - name: DB_CLIENT
+              value: {{ .Values.envVars.directus.dbClient }}
+            - name: DB_HOST
+              value: {{ .Values.envVars.directus.dbHost }}
+            - name: DB_PORT
+              value: {{ .Values.envVars.directus.dbPort }}
+            - name: DB_USER
+              value: {{ .Values.envVars.directus.dbUser }}
+            - name: DB_PASSWORD
+              value: {{ .Values.envVars.directus.dbPass }}
+            - name: DB_DATABASE
+              value: {{ .Values.envVars.directus.dbDatabase }}
+
+            - name: EMAIL_TRANSPORT
+              value: {{ .Values.envVars.directus.emailTransport }}
+            - name: EMAIL_SMTP_HOST
+              value: {{ .Values.envVars.directus.emailSmtpHost }}
+            - name: EMAIL_SMTP_PORT
+              value: {{ .Values.envVars.directus.emailSmtpPort }}
+            - name: EMAIL_SMTP_IGNORE_TLS
+              value: {{ .Values.envVars.directus.emailSmtpIgnoreTls}}
+
+            - name: PUBLIC_URL
+              value: {{ .Values.envVars.directus.publicUrl }}
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
 
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
+            - mountPath: /directus/database
+              name: vol-pvc-directus
+              subPath: {{ fullName }}/database
+            - mountPath: /directus/uploads
+              name: vol-pvc-directus
+              subPath: {{ fullName }}/uploads
+            - mountPath: /directus/extensions
+              name: vol-pvc-directus
+              subPath: {{ fullName }}/extensions
           {{- end }}
 
       {{- with .Values.volumes }}
       volumes:
-        {{- toYaml . | nindent 8 }}
+        - name: vol-{{ fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
       {{- end }}
+
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
