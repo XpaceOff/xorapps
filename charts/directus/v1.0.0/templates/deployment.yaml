@@ -100,18 +100,18 @@ spec:
           volumeMounts:
             - mountPath: /directus/database
               name: vol-pvc-directus
-              subPath: {{ fullName }}/database
+              subPath: {{ $fullName }}/database
             - mountPath: /directus/uploads
               name: vol-pvc-directus
-              subPath: {{ fullName }}/uploads
+              subPath: {{ $fullName }}/uploads
             - mountPath: /directus/extensions
               name: vol-pvc-directus
-              subPath: {{ fullName }}/extensions
+              subPath: {{ $fullName }}/extensions
           {{- end }}
 
       {{- with .Values.volumes }}
       volumes:
-        - name: vol-{{ fullName }}-nfs
+        - name: vol-{{ $fullName }}-nfs
           nfs:
             server: {{ .Values.storage.nfs.hostname }}
             path: {{ .Values.storage.nfs.path }}

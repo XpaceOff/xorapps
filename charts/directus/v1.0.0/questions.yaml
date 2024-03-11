@@ -96,7 +96,6 @@ questions:
       # - "mailgun"
       # - "sendgrid"
       # - "ses"
-    required: true
     group: "Email"
   
   - variable: envVars.directus.emailSmtpHost
