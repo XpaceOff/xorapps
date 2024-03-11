@@ -1,5 +1,41 @@
 questions:
 
+  #  ________________________________________________________
+  # |_________________________ EMAIL ________________________|
+  - variable: envVars.directus.emailTransport
+    label: "Email transport type"
+    description: "The way you to send emails."
+    type: enum
+    options:
+      - "smtp"
+      # - "sendmail"
+      # - "mailgun"
+      # - "sendgrid"
+      # - "ses"
+    required: true
+    group: "Email"
+  
+  - variable: envVars.directus.emailSmtpHost
+    label: "SMTP Hostname"
+    description: "Hostname of the SMTP server"
+    type: string
+    required: true
+    group: "Email"
+    show_if: "envVars.directus.emailTransport=smtp"
+  - variable: envVars.directus.emailSmtpPort
+    label: "SMTP Port"
+    description: "Port of the SMTP server"
+    type: int
+    required: true
+    group: "Email"
+    show_if: "envVars.directus.emailTransport=smtp"
+  - variable: envVars.directus.emailSmtpIgnoreTls
+    label: "Ignore SMTP TLS?"
+    description: "If enabled, directus will ignore TLS of the SMTP server"
+    type: boolean
+    required: true
+    group: "Email"
+    show_if: "envVars.directus.emailTransport=smtp"
 
   #  ________________________________________________________
   # |_______________________ Ingress _______________________|
