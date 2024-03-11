@@ -87,8 +87,11 @@ spec:
             - name: EMAIL_SMTP_IGNORE_TLS
               value: {{ .Values.envVars.directus.emailSmtpIgnoreTls}}
 
+            {{- if .Values.ingress.enabled -}}
             - name: PUBLIC_URL
-              value: {{ .Values.envVars.directus.publicUrl }}
+              value: {{ .Values.ingress.hostUrl }}
+              # value: {{ .Values.envVars.directus.publicUrl }}
+            {{- end }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

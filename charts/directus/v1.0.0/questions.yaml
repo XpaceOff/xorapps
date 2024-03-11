@@ -1,6 +1,90 @@
 questions:
 
   #  ________________________________________________________
+  # |_________________________ User ________________________|
+  - variable: envVars.directus.adminEmail
+    label: "User's email"
+    description: "Email of the administrator user"
+    type: string
+    required: true
+    group: "User"
+  - variable: envVars.directus.adminPassword
+    label: "User's password"
+    description: "Password for the administrator user"
+    type: password
+    required: true
+    group: "User"
+  
+  #  ________________________________________________________
+  # |_______________________ Security ______________________|
+    key: ""
+    secret: ""
+  - variable: envVars.directus.key
+    label: "Key"
+    description: "Unique identifier for the project"
+    type: string
+    required: true
+    group: "Security"
+  - variable: envVars.directus.secret
+    label: "Secret"
+    description: "Secret string for the project."
+    type: password
+    required: true
+    group: "Security"
+
+  #  ________________________________________________________
+  # |_______________________ Database _______________________|
+  - variable: envVars.directus.dbClient
+    label: "Database Client"
+    description: "Database client"
+    type: enum
+    options:
+      - mysql
+      # - postgres
+      # - oracledb
+      # - mssql
+      # - sqlite3
+      # - cockroachdb
+    required: true
+    group: "Database"
+  
+  - variable: envVars.directus.dbHost
+    label: "Database Hostname"
+    description: "Database hostname"
+    type: string
+    required: true
+    group: "Database"
+    show_if: "envVars.directus.dbClient=mysql"
+  - variable: envVars.directus.dbPort
+    label: "Database Port"
+    description: "Database port"
+    type: int
+    required: true
+    group: "Database"
+    show_if: "envVars.directus.dbClient=mysql"
+  - variable: envVars.directus.dbDatabase
+    label: "Database Name"
+    description: "Name of the database"
+    type: string
+    required: true
+    group: "Database"
+    show_if: "envVars.directus.dbClient=mysql"
+  - variable: envVars.directus.dbUser
+    label: "Database User"
+    description: "User to access the database"
+    type: string
+    required: true
+    group: "Database"
+    show_if: "envVars.directus.dbClient=mysql"
+  - variable: envVars.directus.dbPass
+    label: "Database Password"
+    description: "Database password"
+    type: password
+    required: true
+    group: "Database"
+    show_if: "envVars.directus.dbClient=mysql"
+
+  #  ________________________________________________________
   # |_________________________ EMAIL ________________________|
   - variable: envVars.directus.emailTransport
     label: "Email transport type"
@@ -30,7 +114,7 @@ questions:
     group: "Email"
     show_if: "envVars.directus.emailTransport=smtp"
   - variable: envVars.directus.emailSmtpIgnoreTls
-    label: "Ignore SMTP TLS?"
+    label: "Ignore SMTP TLS"
     description: "If enabled, directus will ignore TLS of the SMTP server"
     type: boolean
     required: true

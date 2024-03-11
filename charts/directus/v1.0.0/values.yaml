@@ -29,7 +29,7 @@ envVars:
     emailSmtpPort: ""
     emailSmtpIgnoreTls: ""
 
-    publicUrl: ""
+    # publicUrl: ""
 
 service:
   type: ClusterIP
