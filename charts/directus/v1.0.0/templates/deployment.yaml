@@ -85,9 +85,9 @@ spec:
             - name: EMAIL_SMTP_PORT
               value: {{ .Values.envVars.directus.emailSmtpPort }}
             - name: EMAIL_SMTP_IGNORE_TLS
-              value: {{ .Values.envVars.directus.emailSmtpIgnoreTls}}
+              value: {{ .Values.envVars.directus.emailSmtpIgnoreTls }}
 
-            {{- if .Values.ingress.enabled -}}
+            {{- if .Values.ingress.enabled }}
             - name: PUBLIC_URL
               value: {{ .Values.ingress.hostUrl }}
               # value: {{ .Values.envVars.directus.publicUrl }}
