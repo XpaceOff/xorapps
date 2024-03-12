@@ -110,7 +110,7 @@ spec:
               subPath: {{ $fullName }}/extensions
           {{- end }}
 
-      {{- with .Values.volumes }}
+      {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
       volumes:
         - name: vol-{{ $fullName }}-nfs
           nfs:
