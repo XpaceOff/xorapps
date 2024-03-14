@@ -89,7 +89,7 @@ spec:
 
             {{- if .Values.ingress.enabled }}
             - name: PUBLIC_URL
-              value: {{ .Values.ingress.hostUrl }}
+              value: 'http://{{ .Values.ingress.hostUrl }}'
               # value: {{ .Values.envVars.directus.publicUrl }}
             {{- end }}
 
