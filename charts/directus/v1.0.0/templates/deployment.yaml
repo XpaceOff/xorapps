@@ -70,7 +70,7 @@ spec:
             - name: DB_HOST
               value: {{ .Values.envVars.directus.dbHost }}
             - name: DB_PORT
-              value: {{ .Values.envVars.directus.dbPort }}
+              value: '{{ .Values.envVars.directus.dbPort }}'
             - name: DB_USER
               value: {{ .Values.envVars.directus.dbUser }}
             - name: DB_PASSWORD
@@ -83,9 +83,9 @@ spec:
             - name: EMAIL_SMTP_HOST
               value: {{ .Values.envVars.directus.emailSmtpHost }}
             - name: EMAIL_SMTP_PORT
-              value: {{ .Values.envVars.directus.emailSmtpPort }}
+              value: '{{ .Values.envVars.directus.emailSmtpPort }}'
             - name: EMAIL_SMTP_IGNORE_TLS
-              value: {{ .Values.envVars.directus.emailSmtpIgnoreTls }}
+              value: '{{ .Values.envVars.directus.emailSmtpIgnoreTls }}'
 
             {{- if .Values.ingress.enabled }}
             - name: PUBLIC_URL
@@ -99,13 +99,13 @@ spec:
           {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
           volumeMounts:
             - mountPath: /directus/database
-              name: vol-pvc-directus
+              name: vol-{{ $fullName }}-nfs
               subPath: {{ $fullName }}/database
             - mountPath: /directus/uploads
-              name: vol-pvc-directus
+              name: vol-{{ $fullName }}-nfs
               subPath: {{ $fullName }}/uploads
             - mountPath: /directus/extensions
-              name: vol-pvc-directus
+              name: vol-{{ $fullName }}-nfs
               subPath: {{ $fullName }}/extensions
           {{- end }}
 
