@@ -1,0 +1,91 @@
+{{- $fullName := include "postgresql.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "postgresql.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "postgresql.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+
+      initContainers:
+        - command:
+            - /bin/sh
+          args:
+            - '-c'
+            - mkdir -p /tmp_mount/{{ $fullName }}/postgresql/data && mkdir -p /tmp_mount/{{ $fullName }}/pgadmin
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          name: prepare-nfs-dirs
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          volumeMounts:
+            - mountPath: /tmp_mount
+              name: vol-{{ $fullName }}-nfs
+          {{- end }}
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.postgresql.repository }}:{{ .Values.postgresql.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.postgresql.pullPolicy }}
+
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.envVars.postgresql.adminUsername }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.envVars.postgresql.adminPassword }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/postgresql/data
+          {{- end }}
+
+      {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+      volumes:
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
