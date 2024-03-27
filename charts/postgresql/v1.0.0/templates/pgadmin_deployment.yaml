@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $fullName }}
+  name: {{ $fullName }}-pgadmin
   labels:
     {{- include "postgresql.labels" . | nindent 4 }}
 spec:
@@ -23,21 +23,6 @@ spec:
         {{- end }}
     spec:
 
-      initContainers:
-        - command:
-            - /bin/sh
-          args:
-            - '-c'
-            - mkdir -p /tmp_mount/{{ $fullName }}/postgresql/data && mkdir -p /tmp_mount/{{ $fullName }}/pgadmin
-          image: busybox:1.35.0
-          imagePullPolicy: IfNotPresent
-          name: prepare-nfs-dirs
-          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
-          volumeMounts:
-            - mountPath: /tmp_mount
-              name: vol-{{ $fullName }}-nfs
-          {{- end }}
-
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -52,7 +37,7 @@ spec:
           imagePullPolicy: {{ .Values.postgresql.pullPolicy }}
 
           env:
-            - name: POSTGRES_USER
+            - name: PGADMIN_DEFAULT_EMAIL
               value: {{ .Values.envVars.postgresql.adminUsername }}
             - name: POSTGRES_PASSWORD
               value: {{ .Values.envVars.postgresql.adminPassword }}
@@ -62,9 +47,9 @@ spec:
 
           {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
           volumeMounts:
-            - mountPath: /var/lib/postgresql/data
+            - mountPath: /var/lib/pgadmin 
               name: vol-{{ $fullName }}-nfs
-              subPath: {{ $fullName }}/postgresql/data
+              subPath: {{ $fullName }}/pgadmin
           {{- end }}
 
       {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
