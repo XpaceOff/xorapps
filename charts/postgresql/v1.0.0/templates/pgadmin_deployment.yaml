@@ -17,6 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        app: pgadmin
         {{- include "postgresql.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
@@ -33,14 +34,14 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.postgresql.repository }}:{{ .Values.postgresql.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.postgresql.pullPolicy }}
+          image: "{{ .Values.pgadmin.repository }}:{{ .Values.pgadmin.tag }}"
+          imagePullPolicy: {{ .Values.pgadmin.pullPolicy }}
 
           env:
             - name: PGADMIN_DEFAULT_EMAIL
-              value: {{ .Values.envVars.postgresql.adminUsername }}
+              value: {{ .Values.envVars.pgadmin.adminEmail }}
             - name: POSTGRES_PASSWORD
-              value: {{ .Values.envVars.postgresql.adminPassword }}
+              value: {{ .Values.envVars.pgadmin.adminPass }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
