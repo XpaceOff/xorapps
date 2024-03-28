@@ -1,0 +1,61 @@
+{{- if and .Values.ingress.enabled .Values.pgadminEnabled -}}
+{{- $fullName := include "postgresql.fullname" . -}}
+{{- $svcPort := .Values.service.pgadmin.port -}}
+{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+  {{- end }}
+{{- end }}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-pgadmin-in
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+  {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
+  annotations:
+  {{- if .Values.ingress.issuer }}
+    cert-manager.io/issuer: {{ .Values.ingress.issuer }}
+  {{- end }}
+  {{- if .Values.ingress.forceHttps }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
+  {{- end }}
+  {{- range $key, $value := .Values.ingress.annotations }}
+  {{- if $value }}
+    {{ $key }}: {{ $value }} 
+  {{- end }}
+  {{- end }}
+  {{- end }}
+spec:
+  {{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer }}
+  tls:
+    - hosts:
+        - {{ index .Values.ingress.hostUrl }}
+      secretName: {{ $fullName }}-pgadmin-tls
+  {{- end }}
+  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.hostUrl }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.hostPath }} 
+            pathType: {{ .Values.ingress.hostPathType }}
+            backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}-pgadmin-cip
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}-pgadmin-cip
+              servicePort: {{ $svcPort }}
+              {{- end }}
+{{- end }}

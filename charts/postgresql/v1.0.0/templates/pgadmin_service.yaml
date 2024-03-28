@@ -1,0 +1,17 @@
+{{- $fullName := include "postgresql.fullname" . -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-pgadmin-cip
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: db
+      port: {{ .Values.service.pgadmin.port }}
+      targetPort: 80
+      protocol: TCP
+  selector:
+    {{- include "postgresql.selectorLabels" . | nindent 4 }}
