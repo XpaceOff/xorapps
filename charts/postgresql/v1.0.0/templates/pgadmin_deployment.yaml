@@ -3,8 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $fullName }}-pgadmin
-  # labels:
-  #   {{- include "postgresql.labels" . | nindent 4 }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
 spec:
   replicas: 1 
   selector:
