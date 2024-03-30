@@ -34,8 +34,8 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.pgadmin.repository }}:{{ .Values.pgadmin.tag }}"
-          imagePullPolicy: {{ .Values.pgadmin.pullPolicy }}
+          image: "{{ .Values.image.pgadmin.repository }}:{{ .Values.image.pgadmin.tag }}"
+          imagePullPolicy: {{ .Values.image.pgadmin.pullPolicy }}
 
           env:
             - name: PGADMIN_DEFAULT_EMAIL

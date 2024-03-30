@@ -4,13 +4,13 @@ questions:
   # |________________________ General _______________________|
 
   - variable: envVars.postgresql.adminUsername
-    label: "Admin username"
-    description: "admin username"
+    label: "PostgreSQL Admin username"
+    description: "admin username for postgresql"
     type: string
     required: true
     group: "General"
   - variable: envVars.postgresql.adminPassword
-    label: "Admin password"
+    label: "PostgreSQL Admin password"
     description: "Password for the admin user."
     type: password
     required: true
@@ -25,13 +25,13 @@ questions:
     show_subquestion_if: true
     subquestions:
     - variable: envVars.pgadmin.adminEmail
-      label: "Admin email"
+      label: "Pgadmin Admin email"
       description: "email for the admin user"
       type: string
       required: true
       group: "General"
     - variable: envVars.pgadmin.adminPass
-      label: "Admin password"
+      label: "Pgadmin admin password"
       description: "Password for the admin user."
       type: password
       required: true

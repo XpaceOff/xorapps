@@ -49,8 +49,8 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.postgresql.repository }}:{{ .Values.postgresql.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.postgresql.pullPolicy }}
+          image: "{{ .Values.image.postgresql.repository }}:{{ .Values.image.postgresql.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.postgresql.pullPolicy }}
 
           env:
             - name: POSTGRES_USER
