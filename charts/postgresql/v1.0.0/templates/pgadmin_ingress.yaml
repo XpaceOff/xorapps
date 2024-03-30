@@ -17,6 +17,7 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}-pgadmin-in
   labels:
+    app: pgadmin
     {{- include "postgresql.labels" . | nindent 4 }}
   {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
   annotations:

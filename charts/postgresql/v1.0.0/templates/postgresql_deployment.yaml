@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: {{ $fullName }}
   labels:
-    subapp: postgresql
     {{- include "postgresql.labels" . | nindent 4 }}
 spec:
   replicas: 1 
@@ -15,11 +14,10 @@ spec:
     metadata:
       {{- with .Values.podAnnotations }}
       annotations:
-        app: postgresql
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        subapp: postgresql
+        app: postgresql
         {{- include "postgresql.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}

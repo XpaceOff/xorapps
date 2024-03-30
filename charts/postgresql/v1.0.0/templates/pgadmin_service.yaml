@@ -5,6 +5,7 @@ kind: Service
 metadata:
   name: {{ $fullName }}-pgadmin-cip
   labels:
+    app: pgadmin
     {{- include "postgresql.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
