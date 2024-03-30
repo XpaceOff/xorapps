@@ -15,11 +15,6 @@ questions:
     type: password
     required: true
     group: "General"
-  
-envVars:
-  pgadmin:
-    adminEmail: ""
-    adminPass: ""
 
   - variable: pgadminEnabled 
     label: "Deploy PgAdmin"
