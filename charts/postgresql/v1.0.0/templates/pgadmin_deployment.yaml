@@ -18,10 +18,10 @@ spec:
       {{- end }}
       labels:
         app: pgadmin
-        {{- include "postgresql.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        # {{- include "postgresql.labels" . | nindent 8 }}
+        # {{- with .Values.podLabels }}
+        # {{- toYaml . | nindent 8 }}
+        # {{- end }}
     spec:
 
       {{- with .Values.imagePullSecrets }}

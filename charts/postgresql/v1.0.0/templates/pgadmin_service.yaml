@@ -15,4 +15,5 @@ spec:
       targetPort: 80
       protocol: TCP
   selector:
+    app: pgadmin
     {{- include "postgresql.selectorLabels" . | nindent 4 }}
