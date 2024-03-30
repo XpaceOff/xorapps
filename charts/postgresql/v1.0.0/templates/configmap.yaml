@@ -1,0 +1,7 @@
+{{- $fullName := include "postgresql.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ fullName }}-configs
+data:
+  init.sh: {{ .Files.Get "files/init.sh" | indent 4 }}
