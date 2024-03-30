@@ -82,7 +82,7 @@ spec:
             path: {{ .Values.storage.nfs.path }}
         - name: vol-{{ $fullName }}-config
           configMap:
-            name: {{ fullName }}-configs
+            name: {{ $fullName }}-configs
       {{- end }}
 
       {{- with .Values.nodeSelector }}
