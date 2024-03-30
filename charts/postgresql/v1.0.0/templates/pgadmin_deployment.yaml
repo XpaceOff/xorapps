@@ -9,8 +9,8 @@ spec:
   replicas: 1 
   selector:
     matchLabels:
+      # {{- include "postgresql.selectorLabels" . | nindent 6 }}
       app: pgadmin
-      {{- include "postgresql.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
