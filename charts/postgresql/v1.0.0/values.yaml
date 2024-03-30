@@ -8,7 +8,7 @@ image:
     pullPolicy: IfNotPresent
     tag: "16.2"
   pgadmin:
-    repository: dpage/pgadmin
+    repository: dpage/pgadmin4
     pullPolicy: IfNotPresent
     tag: "8.4"
 

@@ -14,10 +14,10 @@ spec:
     metadata:
       {{- with .Values.podAnnotations }}
       annotations:
+        app: postgresql
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        app: postgresql
         {{- include "postgresql.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}

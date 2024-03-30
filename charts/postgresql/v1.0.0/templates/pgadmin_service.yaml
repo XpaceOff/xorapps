@@ -9,7 +9,7 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - name: db
+    - name: webui
       port: {{ .Values.service.pgadmin.port }}
       targetPort: 80
       protocol: TCP
