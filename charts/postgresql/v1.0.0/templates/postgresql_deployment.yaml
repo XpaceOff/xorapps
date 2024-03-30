@@ -9,6 +9,7 @@ spec:
   replicas: 1 
   selector:
     matchLabels:
+      app: postgresql
       {{- include "postgresql.selectorLabels" . | nindent 6 }}
   template:
     metadata:
