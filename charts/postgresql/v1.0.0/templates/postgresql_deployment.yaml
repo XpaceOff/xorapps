@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   name: {{ $fullName }}
   labels:
+    subapp: postgresql
     {{- include "postgresql.labels" . | nindent 4 }}
 spec:
   replicas: 1 
