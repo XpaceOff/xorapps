@@ -18,6 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        subapp: pgadmin
         {{- include "postgresql.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
@@ -40,7 +41,7 @@ spec:
           env:
             - name: PGADMIN_DEFAULT_EMAIL
               value: {{ .Values.envVars.pgadmin.adminEmail }}
-            - name: POSTGRES_PASSWORD
+            - name: PGADMIN_DEFAULT_PASSWORD
               value: {{ .Values.envVars.pgadmin.adminPass }}
 
           resources:
