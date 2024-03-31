@@ -4,4 +4,4 @@ kind: ConfigMap
 metadata:
   name: {{ $fullName }}-configs
 data:
-  init.sh: {{ .Files.Get "files/init.sh" | indent 4 }}
+  init.sh: {{ .Files.Get "files/init.sh" | quote }}

@@ -25,25 +25,27 @@ spec:
         {{- end }}
     spec:
 
-      initContainers:
-        - command:
-            - /bin/sh
-          args:
-            - '-c'
-            - init.sh {{ $fullName }}
-            # - mkdir -p /tmp_mount/{{ $fullName }}/postgresql/data && mkdir -p /tmp_mount/{{ $fullName }}/pgadmin
-          image: busybox:1.35.0
-          imagePullPolicy: IfNotPresent
-          name: prepare-nfs-dirs
-          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
-          volumeMounts:
-            - name: vol-{{ $fullName }}-nfs
-              mountPath: /tmp_mount
-            - name: vol-{{ $fullName }}-configs
-              mountPath: /init.sh
-              subPath: init.sh
-              readOnly: true
-          {{- end }}
+      # NOTE: I noticed this is not needed but I will keep it here (for now) just for the record.
+      # initContainers:
+      #   - name: prepare-nfs-dirs
+      #     image: busybox:1.35.0
+      #     imagePullPolicy: IfNotPresent
+      #     command:
+      #       - /bin/sh
+      #       - -c
+      #       - cp /scripts/init.sh /scripts-w/ && chmod +x /scripts-w/init.sh && /scripts-w/init.sh {{ $fullName }}
+      #       # - mkdir -p /tmp_mount/{{ $fullName }}/postgresql/data && mkdir -p /tmp_mount/{{ $fullName }}/pgadmin
+      #     {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+      #     volumeMounts:
+      #       - name: vol-{{ $fullName }}-nfs
+      #         mountPath: /tmp_mount
+      #       - name: vol-configs
+      #         mountPath: /scripts/init.sh
+      #         subPath: init.sh
+      #         readOnly: false
+      #       - name: vol-empty-tmp
+      #         mountPath: /scripts-w
+      #     {{- end }}
 
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -80,9 +82,11 @@ spec:
           nfs:
             server: {{ .Values.storage.nfs.hostname }}
             path: {{ .Values.storage.nfs.path }}
-        - name: vol-{{ $fullName }}-config
+        - name: vol-configs
           configMap:
             name: {{ $fullName }}-configs
+        - name: vol-empty-tmp
+          emptyDir: {}
       {{- end }}
 
       {{- with .Values.nodeSelector }}
