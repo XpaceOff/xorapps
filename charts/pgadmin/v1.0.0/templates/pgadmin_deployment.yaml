@@ -1,0 +1,76 @@
+{{- $fullName := include "pgadmin.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-pgadmin
+  labels:
+    {{- include "pgadmin.labels" . | nindent 4 }}
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      {{- include "pgadmin.selectorLabels" . | nindent 6 }}
+      app: pgadmin
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: pgadmin
+        {{- include "pgadmin.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.pgadmin.repository }}:{{ .Values.image.pgadmin.tag }}"
+          imagePullPolicy: {{ .Values.image.pgadmin.pullPolicy }}
+
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: {{ .Values.envVars.pgadmin.adminEmail }}
+            - name: PGADMIN_DEFAULT_PASSWORD
+              value: {{ .Values.envVars.pgadmin.adminPass }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          volumeMounts:
+            - mountPath: /var/lib/pgadmin 
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/pgadmin
+          {{- end }}
+
+      {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+      volumes:
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
