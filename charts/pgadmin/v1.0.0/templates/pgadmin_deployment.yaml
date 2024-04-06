@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $fullName }}-pgadmin
+  name: {{ $fullName }}
   labels:
     {{- include "pgadmin.labels" . | nindent 4 }}
 spec:
