@@ -29,7 +29,7 @@ ingress:
     # kubernetes.io/tls-acme: "true"
   hostUrl: "test-pgadmin.test"
   hostPath: /
-  hostPathType: ImplementationSpecific
+  hostPathType: Prefix 
 
 storage:
   nfs:

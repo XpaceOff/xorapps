@@ -41,7 +41,7 @@ ingress:
     # kubernetes.io/tls-acme: "true"
   hostUrl: ""
   hostPath: /
-  hostPathType: ImplementationSpecific
+  hostPathType: Prefix
 
 storage:
   nfs:
