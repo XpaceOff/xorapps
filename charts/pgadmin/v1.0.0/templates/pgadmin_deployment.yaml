@@ -10,7 +10,6 @@ spec:
   selector:
     matchLabels:
       {{- include "pgadmin.selectorLabels" . | nindent 6 }}
-      app: pgadmin
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,7 +17,6 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        app: pgadmin
         {{- include "pgadmin.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}

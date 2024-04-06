@@ -1,0 +1,91 @@
+questions:
+
+  #  ________________________________________________________
+  # |________________________ General _______________________|
+  - variable: envVars.pgadmin.adminEmail
+    label: "Pgadmin Admin email"
+    description: "email for the admin user"
+    type: string
+    required: true
+    group: "General"
+  - variable: envVars.pgadmin.adminPass
+    label: "Pgadmin admin password"
+    description: "Password for the admin user."
+    type: password
+    required: true
+    group: "General"
+  
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.hostUrl
+      required: true
+      description: "Hostname to connect to your app"
+      type: hostname
+      label: "Hostname"
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      required: true
+    - variable: ingress.issuer
+      required: false
+      description: "Name of issuer. This will issue a certificate to your website" 
+      type: string
+      label: "Issuer"
+      show_if: "ingress.tlsEnabled=true"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: storage.type
+    label: "Storage Type"
+    type: enum
+    required: true
+    options:
+      - NFS
+    group: "Storage"
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN of the NFS server."
+    type: string
+    required: true
+    group: "Storage"
+    show_if: "storage.type=NFS"
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path in the NFS server to save data to."
+    type: string
+    required: true
+    show_if: "storage.type=NFS"
+    group: "Storage"
+  
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
+  - variable: defaultImage
+    default: true
+    description: "Use default Docker image"
+    label: "Use Default Image"
+    type: boolean
+    show_subquestion_if: false
+    group: "Container Images"
+    subquestions:
+    - variable: image.pgadmin.repository
+      label: "Image Repository"
+      description: "Docker image repository for pgadmin"
+      type: string
+    - variable: image.pgadmin.tag
+      label: "Image Tag"
+      description: "Docker image tag for pgadmin"
+      type: string

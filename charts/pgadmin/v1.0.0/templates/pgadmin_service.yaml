@@ -1,0 +1,17 @@
+{{- $fullName := include "pgadmin.fullname" . -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "pgadmin.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: webui
+      port: {{ .Values.service.pgadmin.port }}
+      targetPort: 80
+      protocol: TCP
+  selector:
+    {{- include "pgadmin.selectorLabels" . | nindent 4 }}
