@@ -49,7 +49,7 @@ questions:
       type: boolean
       required: true
       group: "Mail"
-    - variable: envVars.pgadmin.mailTLS
+    - variable: envVars.pgadmin.mailUseTLS
       label: "Use TLS"
       description: "Check if you want to use TLS"
       type: boolean

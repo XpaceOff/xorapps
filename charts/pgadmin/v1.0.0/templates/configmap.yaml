@@ -1,4 +1,4 @@
-{{- $fullName := include "postgresql.fullname" . -}}
+{{- $fullName := include "pgadmin.fullname" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

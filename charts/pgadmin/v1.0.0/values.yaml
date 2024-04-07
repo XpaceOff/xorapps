@@ -17,8 +17,8 @@ envVars:
     configureMail: false
     mailServer: ""
     mailPort: ""
-    mailUseSSL: ""
-    mailUseTLS: ""
+    mailUseSSL: false
+    mailUseTLS: false
 
 service:
   pgadmin:
