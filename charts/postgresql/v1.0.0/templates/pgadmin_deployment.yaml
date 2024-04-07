@@ -49,13 +49,13 @@ spec:
             {{- if .Values.envVars.pgadmin.configureMail }}
             # MAIL VARS
             - name: PGADMIN_CONFIG_MAIL_SERVER
-              value: {{ .Values.envVars.pgadmin.mailServer }}
+              value: "'{{ .Values.envVars.pgadmin.mailServer }}'"
             - name: PGADMIN_CONFIG_MAIL_PORT
               value: "{{ .Values.envVars.pgadmin.mailPort }}"
             - name: PGADMIN_CONFIG_MAIL_USE_SSL
-              value: {{ .Values.envVars.pgadmin.mailUseSSL }}
+              value: "{{ .Values.envVars.pgadmin.mailUseSSL }}"
             - name: PGADMIN_CONFIG_MAIL_USE_TLS
-              value: {{ .Values.envVars.pgadmin.mailUseTLS }}
+              value: "{{ .Values.envVars.pgadmin.mailUseTLS }}"
             {{- end }}
 
           resources:
