@@ -30,8 +30,7 @@ spec:
           command:
             - /bin/sh
             - -c
-            - cp /scripts/init.sh /scripts-w/ && chmod +x /scripts-w/init.sh && /scripts-w/init.sh {{ $fullName }}
-            # - mkdir -p /tmp_mount/{{ $fullName }}/postgresql/data && mkdir -p /tmp_mount/{{ $fullName }}/pgadmin
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
           {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
           volumeMounts:
             - name: vol-{{ $fullName }}-nfs
@@ -64,14 +63,14 @@ spec:
             - name: PGADMIN_DEFAULT_PASSWORD
               value: {{ .Values.envVars.pgadmin.adminPass }}
             - name: PGADMIN_MAX_LOGIN_ATTEMPTS
-              value: {{ .Values.envVars.pgadmin.maxLoginAttempts }}
+              value: "{{ .Values.envVars.pgadmin.maxLoginAttempts }}"
 
             {{- if .Values.envVars.pgadmin.configureMail }}
             # MAIL VARS
             - name: PGADMIN_CONFIG_MAIL_SERVER
               value: {{ .Values.envVars.pgadmin.mailServer }}
             - name: PGADMIN_CONFIG_MAIL_PORT
-              value: {{ .Values.envVars.pgadmin.mailPort }}
+              value: "{{ .Values.envVars.pgadmin.mailPort }}"
             - name: PGADMIN_CONFIG_MAIL_USE_SSL
               value: {{ .Values.envVars.pgadmin.mailUseSSL }}
             - name: PGADMIN_CONFIG_MAIL_USE_TLS
