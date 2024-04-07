@@ -36,6 +36,36 @@ questions:
       type: password
       required: true
       group: "General"
+    - variable: envVars.pgadmin.configureMail
+      label: "Do you want to configure the mail server"
+      description: "Check the box if you want to."
+      type: boolean
+      required: true
+      group: "General"
+    - variable: envVars.pgadmin.mailServer
+      label: "Mail Server"
+      description: "Hostname of the mail server"
+      type: string
+      required: true
+      group: "General"
+    - variable: envVars.pgadmin.mailPort
+      label: "Mail Server Port"
+      description: "Port of the mail server"
+      type: int
+      required: true
+      group: "General"
+    - variable: envVars.pgadmin.mailUseSSL
+      label: "Use SSL"
+      description: "Check if you want to use SSL"
+      type: boolean
+      required: true
+      group: "General"
+    - variable: envVars.pgadmin.mailUseTLS
+      label: "Use TLS"
+      description: "Check if you want to use TLS"
+      type: boolean
+      required: true
+      group: "General"
   
   #  ________________________________________________________
   # |_______________________ Ingress _______________________|
