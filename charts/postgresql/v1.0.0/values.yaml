@@ -25,8 +25,8 @@ envVars:
     configureMail: false
     mailServer: ""
     mailPort: ""
-    mailUseSSL: false
-    mailUseTLS: false
+    mailUseSSL: "False"
+    mailUseTLS: "False"
 
 service:
   postgresql:
