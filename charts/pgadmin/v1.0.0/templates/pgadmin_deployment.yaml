@@ -37,10 +37,25 @@ spec:
           imagePullPolicy: {{ .Values.image.pgadmin.pullPolicy }}
 
           env:
+            # USER VARS
             - name: PGADMIN_DEFAULT_EMAIL
               value: {{ .Values.envVars.pgadmin.adminEmail }}
             - name: PGADMIN_DEFAULT_PASSWORD
               value: {{ .Values.envVars.pgadmin.adminPass }}
+            - name: PGADMIN_MAX_LOGIN_ATTEMPTS
+              value: {{ .Values.envVars.pgadmin.maxLoginAttempts }}
+
+            {{- if .Values.envVars.pgadmin.configureMail }}
+            # MAIL VARS
+            - name: PGADMIN_CONFIG_MAIL_SERVER
+              value: {{ .Values.envVars.pgadmin.mailServer }}
+            - name: PGADMIN_CONFIG_MAIL_PORT
+              value: {{ .Values.envVars.pgadmin.mailPort }}
+            - name: PGADMIN_CONFIG_MAIL_USE_SSL
+              value: {{ .Values.envVars.pgadmin.mailUseSSL }}
+            - name: PGADMIN_CONFIG_MAIL_USE_TLS
+              value: {{ .Values.envVars.pgadmin.mailUseTLS }}
+            {{- end }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

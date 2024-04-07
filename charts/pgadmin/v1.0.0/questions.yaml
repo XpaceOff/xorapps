@@ -14,6 +14,47 @@ questions:
     type: password
     required: true
     group: "General"
+  - variable: envVars.pgadmin.maxLoginAttempts
+    label: "Max Login Attempts"
+    description: "Sets the number of login attempts. If exceeded the account is locked. By setting this value to zero, this feature is deactivated"
+    type: int
+    required: true
+    group: "General"
+  
+  #  ________________________________________________________
+  # |_________________________ MAIL ________________________|
+  - variable: envVars.pgadmin.configureMail
+    label: "Do you want to configure the mail server"
+    description: "Check the box if you want to."
+    type: boolean
+    required: true
+    group: "Mail"
+    show_subquestion_if: true
+    subquestions:
+    - variable: envVars.pgadmin.mailServer
+      label: "Mail Server"
+      description: "Hostname of the mail server"
+      type: string
+      required: true
+      group: "Mail"
+    - variable: envVars.pgadmin.mailPort
+      label: "Mail Server Port"
+      description: "Port of the mail server"
+      type: int
+      required: true
+      group: "Mail"
+    - variable: envVars.pgadmin.mailUseSSL
+      label: "Use SSL"
+      description: "Check if you want to use SSL"
+      type: boolean
+      required: true
+      group: "Mail"
+    - variable: envVars.pgadmin.mailTLS
+      label: "Use TLS"
+      description: "Check if you want to use TLS"
+      type: boolean
+      required: true
+      group: "Mail"
   
   #  ________________________________________________________
   # |_______________________ Ingress _______________________|

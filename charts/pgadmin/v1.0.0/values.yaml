@@ -12,6 +12,13 @@ envVars:
   pgadmin:
     adminEmail: ""
     adminPass: ""
+    maxLoginAttempts: 3
+
+    configureMail: false
+    mailServer: ""
+    mailPort: ""
+    mailUseSSL: ""
+    mailUseTLS: ""
 
 service:
   pgadmin:
