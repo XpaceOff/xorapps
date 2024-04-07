@@ -10,7 +10,7 @@ image:
   pgadmin:
     repository: dpage/pgadmin4
     pullPolicy: IfNotPresent
-    tag: "8.4"
+    tag: "8.5"
 
 pgadminEnabled: false
 
@@ -21,6 +21,12 @@ envVars:
   pgadmin:
     adminEmail: ""
     adminPass: ""
+    maxLoginAttempts: 3
+    configureMail: false
+    mailServer: ""
+    mailPort: ""
+    mailUseSSL: false
+    mailUseTLS: false
 
 service:
   postgresql:

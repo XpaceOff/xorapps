@@ -46,13 +46,19 @@ questions:
     - variable: envVars.pgadmin.mailUseSSL
       label: "Use SSL"
       description: "Check if you want to use SSL"
-      type: boolean
+      type: enum
+      options:
+        - "True"
+        - "False"
       required: true
       group: "Mail"
     - variable: envVars.pgadmin.mailUseTLS
       label: "Use TLS"
       description: "Check if you want to use TLS"
-      type: boolean
+      type: enum
+      options:
+        - "True"
+        - "False"
       required: true
       group: "Mail"
   

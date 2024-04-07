@@ -17,8 +17,8 @@ envVars:
     configureMail: false
     mailServer: ""
     mailPort: ""
-    mailUseSSL: false
-    mailUseTLS: false
+    mailUseSSL: "False"
+    mailUseTLS: "False"
 
 service:
   pgadmin:
@@ -28,7 +28,7 @@ service:
 ingress:
   enabled: true
   className: ""
-  tlsEnabled: true
+  tlsEnabled: false
   forceHttps: true
   issuer: ""
   annotations: {}
