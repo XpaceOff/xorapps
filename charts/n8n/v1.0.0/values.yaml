@@ -1,0 +1,32 @@
+# Default values for n8n.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  n8n:
+    repository: n8nio/n8n
+    pullPolicy: IfNotPresent
+    tag: "1.36.1"
+
+envVars:
+  n8n:
+    # DB VARIABLES
+    db_type: "postgresdb"
+    db_host: ""
+    db_port: "5432"
+    db_name: "n8n"
+    db_user: "n8n-user"
+    db_pass: ""
+
+    # EMAIL VARIABLES
+    email_mode: "smtp"
+
+    # SMTP VARIABLES
+    smtp_host: ""
+    smtp_port: "25"
+    smtp_sender: ""
+    smtp_ssl: "false"
+
+    # OTHERS
+    log_level: "info"
+
