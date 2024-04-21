@@ -11,22 +11,28 @@ image:
 envVars:
   n8n:
     # DB VARIABLES
-    db_type: "postgresdb"
-    db_host: ""
-    db_port: "5432"
-    db_name: "n8n"
-    db_user: "n8n-user"
-    db_pass: ""
+    dbType: "postgresdb"
+    dbHost: ""
+    dbPort: "5432"
+    dbName: "n8n"
+    dbUser: "n8n-user"
+    dbPass: ""
 
     # EMAIL VARIABLES
-    email_mode: "smtp"
+    configureMail: false
+    emailMode: "smtp"
 
     # SMTP VARIABLES
-    smtp_host: ""
-    smtp_port: "25"
-    smtp_sender: ""
-    smtp_ssl: "false"
+    smtpHost: ""
+    smtpPort: "25"
+    smtpSender: ""
+    smtpSsl: "false"
 
     # OTHERS
-    log_level: "info"
+    logLevel: "info"
+
+service:
+  n8n:
+    type: ClusterIP
+    port: 80
 
