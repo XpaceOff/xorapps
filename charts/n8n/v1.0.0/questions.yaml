@@ -1,0 +1,174 @@
+questions:
+
+  #  ________________________________________________________
+  # |_______________________ Database _______________________|
+  - variable: envVars.n8n.dbType
+    label: "Database Type"
+    description: "type of database to use"
+    type: enum
+    options:
+      - "postgresdb"
+    required: true
+    group: "Database"
+
+  - variable: envVars.n8n.dbHost
+    label: "Database Host"
+    description: "Database hostname"
+    type: string
+    required: true
+    show_if: "envVars.n8n.dbHost=postgresdb"
+    group: "Database"
+  - variable: envVars.n8n.dbPort
+    label: "Database Port"
+    description: "Database port"
+    type: string
+    required: true
+    show_if: "envVars.n8n.dbHost=postgresdb"
+    group: "Database"
+  - variable: envVars.n8n.dbName
+    label: "Database Name"
+    description: "Database name to be use by n8n."
+    type: string
+    required: true
+    show_if: "envVars.n8n.dbHost=postgresdb"
+    group: "Database"
+  - variable: envVars.n8n.dbUser
+    label: "Database Username"
+    description: "Username for the database."
+    type: string
+    required: true
+    show_if: "envVars.n8n.dbHost=postgresdb"
+    group: "Database"
+  - variable: envVars.n8n.dbPass
+    label: "Database Password"
+    description: "Password for the database."
+    type: string
+    required: true
+    show_if: "envVars.n8n.dbHost=postgresdb"
+    group: "Database"
+  
+  #  ________________________________________________________
+  # |_________________________ MAIL ________________________|
+  - variable: envVars.n8n.configureMail
+    label: "Do you want to configure the mail settings"
+    description: "Check the box if you want to configure mail settings."
+    type: boolean
+    required: true
+    group: "Mail"
+    show_subquestion_if: true
+    subquestions:
+    - variable: envVars.n8n.emailMode
+      label: "Email mode"
+      description: "Email mode"
+      required: true
+      type: enum
+      options:
+        - "smtp"
+      group: "Mail"
+
+  - variable: envVars.n8n.smtpHost
+    label: "SMTP Host"
+    description: "Hostname of the SMTP server"
+    type: string
+    required: true
+    show_if: "envVars.n8n.emailMode=smtp"
+    group: "Mail"
+  - variable: envVars.n8n.smtpPort
+    label: "SMTP Server Port"
+    description: "Port of the SMTP server"
+    type: int
+    required: true
+    show_if: "envVars.n8n.emailMode=smtp"
+    group: "Mail"
+  - variable: envVars.n8n.smtpSender
+    label: "SMTP Sender"
+    description: "Email sender"
+    type: string
+    required: false
+    show_if: "envVars.n8n.emailMode=smtp"
+    group: "Mail"
+  - variable: envVars.n8n.mailUseSSL
+    label: "Use SSL"
+    description: "Check if you want to use SSL"
+    type: enum
+    options:
+      - "true"
+      - "false"
+    required: true
+    show_if: "envVars.n8n.emailMode=smtp"
+    group: "Mail"
+  
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.hostUrl
+      required: true
+      description: "Hostname to connect to your app"
+      type: hostname
+      label: "Hostname"
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      required: true
+    - variable: ingress.issuer
+      required: false
+      description: "Name of issuer. This will issue a certificate to your website" 
+      type: string
+      label: "Issuer"
+      show_if: "ingress.tlsEnabled=true"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: storage.type
+    label: "Storage Type"
+    type: enum
+    required: true
+    options:
+      - NFS
+    group: "Storage"
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN of the NFS server."
+    type: string
+    required: true
+    group: "Storage"
+    show_if: "storage.type=NFS"
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path in the NFS server to save data to."
+    type: string
+    required: true
+    show_if: "storage.type=NFS"
+    group: "Storage"
+  
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
+  - variable: defaultImage
+    default: true
+    description: "Use default Docker image"
+    label: "Use Default Image"
+    type: boolean
+    show_subquestion_if: false
+    group: "Container Images"
+    subquestions:
+    - variable: image.n8n.repository
+      label: "Image Repository"
+      description: "Docker image repository for n8n"
+      type: string
+    - variable: image.n8n.tag
+      label: "Image Tag"
+      description: "Docker image tag for n8n"
+      type: string
