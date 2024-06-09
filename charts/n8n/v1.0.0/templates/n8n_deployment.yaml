@@ -1,0 +1,132 @@
+{{- $fullName := include "n8n.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "n8n.labels" . | nindent 4 }}
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      {{- include "n8n.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "n8n.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+
+      initContainers:
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
+          {{- end }}
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.n8n.repository }}:{{ .Values.image.n8n.tag }}"
+          imagePullPolicy: {{ .Values.image.n8n.pullPolicy }}
+
+          env:
+            # DB VARIABLES
+            - name: DB_TYPE
+              value: "{{ .Values.envVars.n8n.dbType }}"
+            {{- if eq .Values.envVars.n8n.dbType "postgresdb" }}
+            - name: DB_POSTGRESDB_HOST
+              value: "{{ .Values.envVars.n8n.dbHost }}"
+            - name: DB_POSTGRESDB_PORT
+              value: "{{ .Values.envVars.n8n.dbPort }}"
+            - name: DB_POSTGRESDB_DATABASE
+              value: "{{ .Values.envVars.n8n.dbName }}"
+            - name: DB_POSTGRESDB_PASSWORD
+              value: "{{ .Values.envVars.n8n.dbPass }}"
+            {{- end }}
+
+            # EMAIL VARS
+            {{- if .Values.envVars.n8n.configureMail }}
+            - name: N8N_EMAIL_MODE
+              value: "{{ .Values.envVars.n8n.configureMail }}"
+            {{- end }}
+
+            {{- if and .Values.envVars.n8n.configureMail (eq .Values.envVars.n8n.emailMode "smtp") }}
+            - name: N8N_SMTP_HOST
+              value: "{{ .Values.envVars.n8n.smtpHost }}"
+            - name: N8N_SMTP_PORT
+              value: "{{ .Values.envVars.n8n.smtpPort }}"
+            - name: N8N_SMTP_SENDER
+              value: "{{ .Values.envVars.n8n.smtpSender }}"
+            - name: N8N_SMTP_SSL
+              value: "{{ .Values.envVars.n8n.smtpSsl }}"
+            {{- end }}
+
+            # LOG VARS
+            - name: N8N_LOG_LEVEL
+              value: "{{ .Values.envVars.n8n.logLevel }}"
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          volumeMounts:
+            - mountPath: /home/node/.n8n
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/n8n_data
+            - mountPath: /files
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/files
+          {{- end }}
+
+      {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+      volumes:
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        - name: vol-empty-tmp
+          emptyDir: {}
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
