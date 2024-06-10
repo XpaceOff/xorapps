@@ -7,44 +7,46 @@ questions:
     description: "type of database to use"
     type: enum
     options:
+      - "sqlite"
       - "postgresdb"
     required: true
     group: "Database"
 
+  # TODO: Add sqlite values. sqlite should be the default
   - variable: envVars.n8n.dbHost
     label: "Database Host"
     description: "Database hostname"
     type: string
     required: true
-    show_if: "envVars.n8n.dbHost=postgresdb"
+    show_if: "envVars.n8n.dbType=postgresdb"
     group: "Database"
   - variable: envVars.n8n.dbPort
     label: "Database Port"
     description: "Database port"
     type: string
     required: true
-    show_if: "envVars.n8n.dbHost=postgresdb"
+    show_if: "envVars.n8n.dbType=postgresdb"
     group: "Database"
   - variable: envVars.n8n.dbName
     label: "Database Name"
     description: "Database name to be use by n8n."
     type: string
     required: true
-    show_if: "envVars.n8n.dbHost=postgresdb"
+    show_if: "envVars.n8n.dbType=postgresdb"
     group: "Database"
   - variable: envVars.n8n.dbUser
     label: "Database Username"
     description: "Username for the database."
     type: string
     required: true
-    show_if: "envVars.n8n.dbHost=postgresdb"
+    show_if: "envVars.n8n.dbType=postgresdb"
     group: "Database"
   - variable: envVars.n8n.dbPass
     label: "Database Password"
     description: "Password for the database."
     type: string
     required: true
-    show_if: "envVars.n8n.dbHost=postgresdb"
+    show_if: "envVars.n8n.dbType=postgresdb"
     group: "Database"
   
   #  ________________________________________________________
