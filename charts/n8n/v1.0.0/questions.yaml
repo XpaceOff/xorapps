@@ -174,3 +174,19 @@ questions:
       label: "Image Tag"
       description: "Docker image tag for n8n"
       type: string
+
+    #  ________________________________________________________
+    # |_________________________ Logs ________________________|
+    - variable: envVars.n8n.logLevel
+      label: "Log Level"
+      description: "Logs level."
+      type: enum
+      options:
+        - "silent"
+        - "error"
+        - "warn"
+        - "info"
+        - "verbose"
+        - "debug"
+      required: true
+      group: "Logs"
