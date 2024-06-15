@@ -67,6 +67,8 @@ spec:
               value: "{{ .Values.envVars.n8n.dbPort }}"
             - name: DB_POSTGRESDB_DATABASE
               value: "{{ .Values.envVars.n8n.dbName }}"
+            - name: DB_POSTGRESDB_USER
+              value: "{{ .Values.envVars.n8n.dbUser }}"
             - name: DB_POSTGRESDB_PASSWORD
               value: "{{ .Values.envVars.n8n.dbPass }}"
             {{- end }}
