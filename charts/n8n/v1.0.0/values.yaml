@@ -20,7 +20,7 @@ envVars:
 
     # EMAIL VARIABLES
     configureMail: false
-    emailMode: "smtp"
+    emailMode: ""
 
     # SMTP VARIABLES
     smtpHost: ""
