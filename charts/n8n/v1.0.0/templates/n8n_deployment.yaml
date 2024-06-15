@@ -76,7 +76,7 @@ spec:
             # EMAIL VARS
             {{- if .Values.envVars.n8n.configureMail }}
             - name: N8N_EMAIL_MODE
-              value: "{{ .Values.envVars.n8n.configureMail }}"
+              value: "{{ .Values.envVars.n8n.emailMode }}"
             {{- end }}
 
             {{- if and .Values.envVars.n8n.configureMail (eq .Values.envVars.n8n.emailMode "smtp") }}
