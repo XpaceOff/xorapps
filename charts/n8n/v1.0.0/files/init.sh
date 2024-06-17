@@ -8,15 +8,21 @@ if [ -d "$n8n_dir" ]; then
 
 	echo ""
 	echo "Setting the right owner..."
-	chown -R node:node "$n8n_dir/"
+
+	# NOTE: I don't know if using root:root is safe, but it makes the app work
+	# when data is already written. I would have to check if there is a NFS
+	# setting for me to avoid this.
+	# TODO: Check if this is safe and make changes if necessary.
+	chown -R root:root "$n8n_dir/"
 	chmod 777 "$n8n_dir"
 
 	echo ""
 	echo "Permission after:"
 	ls -l "$n8n_dir/"
-	sleep 5s
 else
 	echo "$n8n_dir doesn't exist."
 	ls -l /tmp_mount/
 	exit 1
 fi
+
+sleep 5s
