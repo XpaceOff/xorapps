@@ -21,8 +21,7 @@ if [ -d "$n8n_dir" ]; then
 	ls -l "$n8n_dir/"
 else
 	echo "$n8n_dir doesn't exist."
-	ls -l /tmp_mount/
-	exit 1
+	echo "This is probably because this is a new deployment."
 fi
 
 sleep 5s
