@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "Running init.sh..."
-n8n_dir="/tmp_mount/$1/n8n"
+n8n_dir="/tmp_mount/$1"
 
 if [ -d "$n8n_dir" ]; then
 	echo "Permission before:"
@@ -17,8 +17,6 @@ if [ -d "$n8n_dir" ]; then
 	sleep 5s
 else
 	echo "$n8n_dir doesn't exist."
-	ls /tmp_mount/
-	echo "---"
-	ls /
+	ls -l /tmp_mount/
 	exit 1
 fi
