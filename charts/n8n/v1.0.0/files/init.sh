@@ -8,10 +8,11 @@ if [ -d "$n8n_dir" ]; then
 
 	echo ""
 	echo "Setting the right owner..."
-	# chown -R 5050:root "$n8n_dir/"
-	# chmod 777 "$n8n_dir"
+	chown -R node:node "$n8n_dir/"
+	chmod 777 "$n8n_dir"
 
 	echo ""
 	echo "Permission after:"
 	ls -l "$n8n_dir/"
+	sleep 5s
 fi
