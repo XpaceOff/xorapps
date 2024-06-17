@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
+  defaultImage: true
   n8n:
     repository: n8nio/n8n
     pullPolicy: IfNotPresent

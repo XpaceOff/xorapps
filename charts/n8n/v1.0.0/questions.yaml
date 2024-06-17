@@ -158,8 +158,7 @@ questions:
   
   #  ________________________________________________________
   # |________________________ Image ________________________|
-  - variable: defaultImage
-    default: true
+  - variable: image.defaultImage
     description: "Use default Docker image"
     label: "Use Default Image"
     type: boolean
@@ -175,18 +174,18 @@ questions:
       description: "Docker image tag for n8n"
       type: string
 
-    #  ________________________________________________________
-    # |_________________________ Logs ________________________|
-    - variable: envVars.n8n.logLevel
-      label: "Log Level"
-      description: "Logs level."
-      type: enum
-      options:
-        - "silent"
-        - "error"
-        - "warn"
-        - "info"
-        - "verbose"
-        - "debug"
-      required: true
-      group: "Logs"
+  #  ________________________________________________________
+  # |_________________________ Logs ________________________|
+  - variable: envVars.n8n.logLevel
+    label: "Log Level"
+    description: "Logs level."
+    type: enum
+    options:
+      - "silent"
+      - "error"
+      - "warn"
+      - "info"
+      - "verbose"
+      - "debug"
+    required: true
+    group: "Logs"
