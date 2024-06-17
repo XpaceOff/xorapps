@@ -15,4 +15,10 @@ if [ -d "$n8n_dir" ]; then
 	echo "Permission after:"
 	ls -l "$n8n_dir/"
 	sleep 5s
+else
+	echo "$n8n_dir doesn't exist."
+	ls /tmp_mount/
+	echo "---"
+	ls /
+	exit 1
 fi
