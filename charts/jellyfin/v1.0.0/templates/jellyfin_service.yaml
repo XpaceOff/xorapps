@@ -1,0 +1,17 @@
+{{- $fullName := include "jellyfin.fullname" . -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "jellyfin.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: webui
+      port: {{ .Values.service.jellyfin.port }}
+      targetPort: 8096
+      protocol: TCP
+  selector:
+    {{- include "jellyfin.selectorLabels" . | nindent 4 }}
