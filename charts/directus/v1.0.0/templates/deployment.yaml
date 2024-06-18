@@ -25,20 +25,27 @@ spec:
         {{- end }}
     spec:
 
+      # This initContainers will call the script files/init.sh 
+      # which will set the right permissions in cases where there are files 
+      # already in the folder that gets mounted.
       initContainers:
-        - command:
-            - /bin/sh
-          args:
-            - '-c'
-            - mkdir -p /tmp_mount/{{ $fullName }}
-            # - mkdir -p /tmp_mount/{{ $fullName }}/database && mkdir -p /tmp_mount/{{ $fullName }}/uploads && mkdir -p /tmp_mount/{{ $fullName }}/extensions
+        - name: prepare-nfs-dirs
           image: busybox:1.35.0
           imagePullPolicy: IfNotPresent
-          name: prepare-nfs-dirs
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
           {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
           volumeMounts:
-            - mountPath: /tmp_mount
-              name: vol-{{ $fullName }}-nfs
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
           {{- end }}
 
       {{- with .Values.imagePullSecrets }}
@@ -115,6 +122,11 @@ spec:
           nfs:
             server: {{ .Values.storage.nfs.hostname }}
             path: {{ .Values.storage.nfs.path }}
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        - name: vol-empty-tmp
+          emptyDir: {}
       {{- end }}
 
       {{- with .Values.nodeSelector }}
