@@ -72,11 +72,13 @@ spec:
 
             - name: vol-{{ $fullName }}-medianfs
               mountPath: /movies
-              subPath: {{ $fullName }}/movies
+              subPath: movies
+              #subPath: {{ $fullName }}/movies
               readOnly: true
             - name: vol-{{ $fullName }}-medianfs
               mountPath: /shows
-              subPath: {{ $fullName }}/shows
+              subPath: shows
+              #subPath: {{ $fullName }}/shows
               readOnly: true
           {{- end }}
 
