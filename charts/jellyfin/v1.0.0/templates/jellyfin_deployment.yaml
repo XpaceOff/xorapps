@@ -1,0 +1,114 @@
+{{- $fullName := include "jellyfin.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "jellyfin.labels" . | nindent 4 }}
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      {{- include "jellyfin.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "jellyfin.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+
+      initContainers:
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
+          {{- end }}
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.jellyfin.repository }}:{{ .Values.image.pgadmin.tag }}"
+          imagePullPolicy: {{ .Values.image.jellyfin.pullPolicy }}
+
+          # env:
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /config
+              subPath: {{ $fullName }}/config
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /cache
+              subPath: {{ $fullName }}/cache
+
+            - name: vol-{{ $fullName }}-medianfs
+              mountPath: /movies
+              subPath: {{ $fullName }}/movies
+              readOnly: true
+            - name: vol-{{ $fullName }}-medianfs
+              mountPath: /shows
+              subPath: {{ $fullName }}/shows
+              readOnly: true
+          {{- end }}
+
+      {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+      volumes:
+        # NFS related volumes
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+        - name: vol-{{ $fullName }}-medianfs
+          nfs:
+            server: {{ .Values.storage.medianfs.hostname }}
+            path: {{ .Values.storage.medianfs.path }}
+
+        # Init config related volumes
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        - name: vol-empty-tmp
+          emptyDir: {}
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,7 @@
+{{- $fullName := include "jellyfin.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-configs
+data:
+  init.sh: {{ .Files.Get "files/init.sh" | quote }}

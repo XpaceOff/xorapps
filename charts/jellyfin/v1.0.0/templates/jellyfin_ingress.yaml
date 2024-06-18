@@ -1,6 +1,6 @@
 {{- if and .Values.ingress.enabled -}}
-{{- $fullName := include "n8n.fullname" . -}}
-{{- $svcPort := .Values.service.n8n.port -}}
+{{- $fullName := include "jellyfin.fullname" . -}}
+{{- $svcPort := .Values.service.jellyfin.port -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
@@ -17,7 +17,7 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}-in
   labels:
-    {{- include "n8n.labels" . | nindent 4 }}
+    {{- include "jellyfin.labels" . | nindent 4 }}
   {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
   annotations:
   {{- if .Values.ingress.issuer }}
@@ -37,7 +37,7 @@ spec:
   tls:
     - hosts:
         - {{ index .Values.ingress.hostUrl }}
-      secretName: {{ $fullName }}-n8n-tls
+      secretName: {{ $fullName }}-jellyfin-tls
   {{- end }}
   {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.ingress.className }}
