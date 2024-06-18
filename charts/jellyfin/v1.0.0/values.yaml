@@ -32,11 +32,11 @@ ingress:
 
 storage:
   nfs:
-    hostname: "nfs-server.test"
-    path: "/volume/nfs/path"
+    hostname: ""
+    path: ""
   medianfs:
-    hostname: "nfs-server.test"
-    path: "/volume/nfs/path"
+    hostname: ""
+    path: ""
 
 imagePullSecrets: []
 nameOverride: ""
