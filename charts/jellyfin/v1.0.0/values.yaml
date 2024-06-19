@@ -7,7 +7,7 @@ image:
   jellyfin:
     repository: jellyfin/jellyfin
     pullPolicy: IfNotPresent
-    tag: "10.8.13"
+    tag: "10.9.6"
 
 # envVars:
 #   jellyfin:
