@@ -1,0 +1,17 @@
+{{- $fullName := include "teleport.fullname" . -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "teleport.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: webui
+      port: {{ .Values.service.teleport.port }}
+      targetPort: 3080
+      protocol: TCP
+  selector:
+    {{- include "teleport.selectorLabels" . | nindent 4 }}

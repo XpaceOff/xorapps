@@ -1,0 +1,11 @@
+{{- if .Values.ingress.forceHttps -}}
+{{- $fullName := include "teleport.fullname" . -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-tm-tohttps
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}
