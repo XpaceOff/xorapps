@@ -82,8 +82,8 @@ spec:
 
           {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
           volumeMounts:
-            - mountPath: /var/lib/pgadmin 
-              name: vol-{{ $fullName }}-nfs
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /var/lib/pgadmin 
               subPath: {{ $fullName }}/pgadmin
           {{- end }}
 
