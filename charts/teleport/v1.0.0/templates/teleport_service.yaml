@@ -6,6 +6,9 @@ metadata:
   name: {{ $fullName }}-cip
   labels:
     {{- include "teleport.labels" . | nindent 4 }}
+  annotations:
+    # This will help skipping SSL verification internally.
+    traefik.ingress.kubernetes.io/service.serverstransport: {{ .Release.Namespace }}-{{ $fullName }}-tst-skipsslverify@kubernetescrd
 spec:
   type: {{ .Values.service.type }}
   ports:

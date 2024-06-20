@@ -1,0 +1,15 @@
+# Teleport will redirect packages to other apps
+# those apps might be using https. 
+# I will skip SSL verification inside to avoid any issues.
+
+# TODO: Maybe add a certificate to all the apps internally
+# to avoid this issues, and insure 100% security.
+
+{{- $fullName := include "teleport.fullname" . -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: {{ $fullName }}-tst-skipsslverify
+  namespace: {{ .Release.Namespace }}
+spec:
+  insecureSkipVerify: true # Skip SSL verification
