@@ -27,7 +27,7 @@ questions:
     - variable: ingress.hostUrls
       required: true
       label: "Hostnames"
-      description: "use ',' to separate hostnames"
+      description: "Hostname to connect to your app. Use ',' to separate hostnames"
       show_if: "ingress.multipleHosts=true"
 
     - variable: ingress.tlsEnabled

@@ -53,7 +53,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.teleport.repository }}:{{ .Values.image.pgadmin.tag }}"
+          image: "{{ .Values.image.teleport.repository }}:{{ .Values.image.teleport.tag }}"
           imagePullPolicy: {{ .Values.image.teleport.pullPolicy }}
 
           #env:
