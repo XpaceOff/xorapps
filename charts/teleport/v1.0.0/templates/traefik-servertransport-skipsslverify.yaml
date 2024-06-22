@@ -5,7 +5,7 @@
 # TODO: Maybe add a certificate to all the apps internally
 # to avoid this issues, and insure 100% security.
 
-{{- $fullName := include "teleport.fullname" . -}}
+{{- $fullName := include "teleport.fullname" . }}
 apiVersion: traefik.containo.us/v1alpha1
 kind: ServersTransport
 metadata:

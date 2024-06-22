@@ -73,8 +73,7 @@ questions:
   
   #  ________________________________________________________
   # |________________________ Image ________________________|
-  - variable: defaultImage
-    default: true
+  - variable: image.defaultImage
     description: "Use default Docker image"
     label: "Use Default Image"
     type: boolean
