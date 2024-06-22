@@ -16,7 +16,7 @@ image:
 service:
   teleport:
     type: ClusterIP
-    port: 80
+    port: 443
 
 ingress:
   enabled: true
