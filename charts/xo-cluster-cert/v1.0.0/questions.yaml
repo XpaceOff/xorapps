@@ -66,4 +66,3 @@ questions:
     required: true
     group: "General"
     show_if: "certmanager.letsencrypt.defaultServerUrl=false"
-
