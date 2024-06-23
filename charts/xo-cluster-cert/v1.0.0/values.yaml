@@ -3,7 +3,16 @@
 # Declare variables to be passed into your templates.
 
 certmanager:
+  issuerType: "" # letsencrypt, selfisgned.
   issuerKind: "" # Issuer or ClusterIssuer.
   acme:
     email: "" 
     privateKeySecretRef: ""
+
+  letsencrypt:
+    deployStagIssuer: true
+    deployProdIssuer: true
+    defaultServerUrl: true
+    serverStagingUrl: "https://acme-staging-v02.api.letsencrypt.org/directory"
+    serverProductionUrl: "https://acme-v02.api.letsencrypt.org/directory"
+

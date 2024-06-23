@@ -1,11 +1,11 @@
 {{- if eq .Values.certmanager.issuerType "letsencrypt" -}}
-{{- if .Values.certmanager.letsencrypt.deployStagIssuer -}}
+{{- if .Values.certmanager.letsencrypt.deployProdIssuer -}}
 {{- $fullName := include "xo-cluster-cert.fullname" . -}}
 
 apiVersion: cert-manager.io/v1
 kind: {{ .Values.certmanager.issuerKind }}
 metadata:
-  name: {{ $fullName }}-letsencrypt-staging
+  name: {{ $fullName }}-letsencrypt-prod
 
   {{- if eq .Values.certmanager.issuerKind "Issuer" }}
   namespace: {{ .Release.Namespace }}
@@ -14,15 +14,15 @@ metadata:
 spec:
   acme:
     # The ACME server URL
-    server: {{ .Values.certmanager.letsencrypt.serverStagingUrl }} 
+    server: {{ .Values.certmanager.letsencrypt.serverProductionUrl }} 
     # Email address used for ACME registration
     email: {{ .Values.certmanager.acme.email }}
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
       {{- if .Values.certmanager.acme.privateKeySecretRef }}
-      name: {{ .Values.certmanager.acme.privateKeySecretRef }}-stg
+      name: {{ .Values.certmanager.acme.privateKeySecretRef }}-prod
       {{- else }}
-      name: {{ $fullName }}-lets-secret-stg
+      name: {{ $fullName }}-lets-secret-prod
       {{- end }}
 
     # Enable the HTTP-01 challenge provider
