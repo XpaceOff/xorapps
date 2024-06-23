@@ -1,0 +1,69 @@
+questions:
+
+  #  ________________________________________________________
+  # |________________________ General _______________________|
+  
+  - variable: certmanager.issuerKind
+    label: "Issuer Kind"
+    description: "Issuer issues certificates to a specific namespace, and ClusterIssuer issues to apps in the entire cluster."
+    type: enum
+    required: true
+    options:
+      - "Issuer"
+      - "ClusterIssuer"
+    group: "General"
+  
+  - variable: certmanager.issuerType
+    label: "Issuer Type"
+    type: enum
+    required: true
+    options:
+      - "letsencrypt"
+      - "selfsigned"
+    group: "General"
+
+  - variable: certmanager.acme.email
+    label: "Email"
+    description: "Email address used for ACME registration"
+    type: string
+    required: true
+    group: "General"
+    show_if: "certmanager.issuerType=letsencrypt"
+
+  - variable: certmanager.deployStagIssuer
+    label: "Deploy Staging Issuer"
+    description: "If this is disable, the staging issuer won't be deployed."
+    type: boolean
+    required: true
+    group: "General"
+    show_if: "certmanager.issuerType=letsencrypt"
+  - variable: certmanager.deployProdIssuer
+    label: "Deploy Production Issuer"
+    description: "If this is disable, the production issuer won't be deployed."
+    type: boolean
+    required: true
+    group: "General"
+    show_if: "certmanager.issuerType=letsencrypt"
+  
+  - variable: certmanager.letsencrypt.defaultServerUrl
+    label: "Use the default server URLs for Let's Encrypt"
+    description: "The Let's Encrypt URLs should be up to date, but if you need to update them you can disable this option and change them."
+    type: boolean
+    required: true
+    group: "General"
+    show_if: "certmanager.issuerType=letsencrypt"
+  - variable: certmanager.letsencrypt.serverStagingUrl
+    label: "Let's Encrypt Server Staging URL"
+    description: "Let's Encrypt Server Staging URL"
+    type: string
+    required: true
+    group: "General"
+    show_if: "certmanager.letsencrypt.defaultServerUrl=false"
+  - variable: certmanager.letsencrypt.serverProductionUrl
+    label: "Let's Encrypt Server Production URL"
+    description: "Let's Encrypt Server Production URL"
+    type: string
+    required: true
+    group: "General"
+    show_if: "certmanager.letsencrypt.defaultServerUrl=false"
+

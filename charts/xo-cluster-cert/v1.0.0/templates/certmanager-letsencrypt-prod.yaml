@@ -1,5 +1,5 @@
 {{- if eq .Values.certmanager.issuerType "letsencrypt" -}}
-{{- if .Values.certmanager.letsencrypt.deployProdIssuer -}}
+{{- if .Values.certmanager.deployProdIssuer -}}
 {{- $fullName := include "xo-cluster-cert.fullname" . -}}
 
 apiVersion: cert-manager.io/v1

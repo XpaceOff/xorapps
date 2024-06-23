@@ -9,10 +9,10 @@ certmanager:
     email: "" 
     privateKeySecretRef: ""
 
+  deployStagIssuer: true
+  deployProdIssuer: true
+
   letsencrypt:
-    deployStagIssuer: true
-    deployProdIssuer: true
     defaultServerUrl: true
     serverStagingUrl: "https://acme-staging-v02.api.letsencrypt.org/directory"
     serverProductionUrl: "https://acme-v02.api.letsencrypt.org/directory"
-
