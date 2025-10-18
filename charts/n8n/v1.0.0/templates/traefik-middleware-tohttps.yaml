@@ -1,6 +1,6 @@
 {{- if .Values.ingress.forceHttps -}}
 {{- $fullName := include "n8n.fullname" . -}}
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: {{ $fullName }}-tm-tohttps
