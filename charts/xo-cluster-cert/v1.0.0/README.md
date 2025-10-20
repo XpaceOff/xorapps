@@ -1,3 +1,8 @@
+## Options
+
+- `certmanager.issuerKind`: `ClusterIssuer` or `Issuer`
+- `certmanager.issuerType`: `letsencrypt` or `selfisgned`
+
 ## Manual install
 
 ```bash

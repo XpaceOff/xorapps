@@ -5,7 +5,7 @@
 apiVersion: cert-manager.io/v1
 kind: {{ .Values.certmanager.issuerKind }}
 metadata:
-  name: {{ $fullName }}-letsencrypt-staging
+  name: {{ .Release.Name }}-staging
 
   {{- if eq .Values.certmanager.issuerKind "Issuer" }}
   namespace: {{ .Release.Namespace }}
@@ -32,6 +32,6 @@ spec:
       http01:
         ingress:
           # TODO: Add multiple ingress classes.
-          class: traefik
+          ingressClassName: traefik
 {{- end }}
 {{- end }}
