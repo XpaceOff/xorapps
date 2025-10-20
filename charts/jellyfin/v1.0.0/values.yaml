@@ -7,10 +7,7 @@ image:
   jellyfin:
     repository: jellyfin/jellyfin
     pullPolicy: IfNotPresent
-    tag: "10.9.6"
-
-# envVars:
-#   jellyfin:
+    tag: "10.10.7"
 
 service:
   jellyfin:
@@ -24,8 +21,6 @@ ingress:
   forceHttps: true
   issuer: ""
   annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   hostUrl: "test-jellyfin.test"
   hostPath: /
   hostPathType: Prefix 
