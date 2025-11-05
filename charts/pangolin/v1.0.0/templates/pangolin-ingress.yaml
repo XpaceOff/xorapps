@@ -1,0 +1,57 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "pangolin.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-pangolin-in
+  
+  {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
+  annotations:
+  {{- if .Values.ingress.issuer }}
+    cert-manager.io/issuer: {{ .Values.ingress.issuer }}
+  {{- end }}
+  {{- if .Values.ingress.forceHttps }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
+  {{- end }}
+  {{- range $key, $value := .Values.ingress.annotations }}
+  {{- if $value }}
+    {{ $key }}: {{ $value }} 
+  {{- end }}
+  {{- end }}
+  {{- end }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.hostDomain }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ $fullName }}-gerbil-cip
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ $fullName }}-gerbil-cip
+                port:
+                  number: 80
+            path: /api/v1
+            pathType: Prefix
+    - host: '*.{{ .Values.ingress.hostDomain }}'
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ $fullName }}-gerbil-cip
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
+  {{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer }}
+  tls:
+    - secretName: {{ $fullName }}-pangolin-tls
+      hosts:
+        - {{ index .Values.ingress.hostDomain }}
+  {{- end }}
+{{- end }}

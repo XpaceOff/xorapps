@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pangolin.fullname" . }}-gerbil
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: gerbil
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: gerbil
+        app: {{ include "pangolin.fullname" . }}-gerbil
+    spec:
+      containers:
+        - name: gerbil
+          env:
+            - name: LOG_LEVEL
+              value: DEBUG
+          image: "{{ .Values.deployments.gerbil.image.repository }}:{{ .Values.deployments.gerbil.image.tag }}"
+          imagePullPolicy: "{{ .Values.deployments.gerbil.image.pullPolicy }}"
+          args:
+            - '--remoteConfig=http://{{ include "pangolin.fullname" . }}-pangolin-cip.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain | default "cluster.local" }}:3001/api/v1/'
+            - '--reachableAt=http://{{ include "pangolin.fullname" . }}-gerbil-cip.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain | default "cluster.local" }}:3004'
+            - '--generateAndSaveKeyTo=/var/config/key'
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          
+          {{- $vols := required "values.volumes must be a non-empty list" .Values.volumes }}
+          {{- $first := required "values.volumes[0] is missing" (index $vols 0) }}
+          {{- $volName := required "values.volumes[0].name is required" $first.name }}
+          volumeMounts:
+            - mountPath: /var/config
+              name: {{ $volName }}
+              subPath: config
+
+        - name: traefik
+          image: "{{ .Values.deployments.traefik.image.repository }}:{{ .Values.deployments.traefik.image.tag }}"
+          imagePullPolicy: "{{ .Values.deployments.traefik.image.pullPolicy }}"
+          args:
+            - '--configFile=/etc/traefik/traefik_config.yml'
+
+          volumeMounts:
+            - mountPath: /var/certificates
+              name: {{ $volName }}
+              readOnly: true
+              subPath: pangolin-data
+            - mountPath: /var/dynamic
+              name: {{ $volName }}
+              readOnly: true
+              subPath: pangolin-data
+            - mountPath: /letsencrypt
+              name: {{ $volName }}
+              subPath: config/letsencrypt
+            - mountPath: /etc/traefik/traefik_config.yml
+              name: config-file
+              subPath: traefik_config.yml
+              readOnly: true
+            - mountPath: /etc/traefik/dynamic_config.yml
+              name: config-file
+              subPath: dynamic_config.yml
+              readOnly: true
+      volumes:
+        {{- toYaml $vols | nindent 8 }}
+        - name: config-file
+          secret:
+            secretName: {{ include "pangolin.fullname" . }}-config

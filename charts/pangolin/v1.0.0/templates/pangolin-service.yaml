@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pangolin.fullname" . }}-pangolin-cip
+spec:
+  ports:
+    - name: http-ext-api
+      port: 3000
+      protocol: TCP
+      targetPort: 3000
+    - name: http-int-api
+      port: 3001
+      protocol: TCP
+      targetPort: 3001
+    - name: http-ui
+      port: 3002
+      protocol: TCP
+      targetPort: 3002
+  selector:
+    app: {{ include "pangolin.fullname" . }}-pangolin
+  type: ClusterIP

@@ -1,0 +1,42 @@
+providers:
+  http:
+    endpoint: "http://{{ include "pangolin.fullname" . }}-pangolin-cip.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain | default "cluster.local" }}:3001/api/v1/traefik-config"
+    pollInterval: "5s"
+  file:
+    filename: "/etc/traefik/dynamic_config.yml"
+
+experimental:
+  plugins:
+    badger:
+      moduleName: "github.com/fosrl/badger"
+      version: {{ .Values.settings.traefik.badgerVersion }}
+
+log:
+  level: "DEBUG"
+  format: "common"
+
+accessLog:
+  # JSON format
+  format: json
+  # Filter on status codes, retry attempts and minimal duration
+  filters:
+    statusCodes:
+      - "200-599"
+  fields:
+    headers:
+      defaultMode: drop
+      names:
+        User-Agent: keep
+        X-Forwarded-For: keep
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+serversTransport:
+  insecureSkipVerify: true
+
+ping:
+    entryPoint: "web"

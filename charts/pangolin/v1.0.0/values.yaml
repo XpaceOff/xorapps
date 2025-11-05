@@ -1,0 +1,47 @@
+# Default values for pangolin.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+settings:
+  pangolin:
+    serverSecretKey: ''
+  traefik:
+    badgerVersion: "v1.2.0"
+
+deployments:
+  pangolin:
+    replicaCount: 1
+    image:
+      repository: "fosrl/pangolin"
+      pullPolicy: IfNotPresent
+      tag: "1.11.0"
+  gerbil:
+    replicaCount: 1
+    image:
+      repository: "fosrl/gerbil"
+      pullPolicy: IfNotPresent
+      tag: "1.2.2"
+  traefik:
+    replicaCount: 1
+    image:
+      repository: "traefik"
+      pullPolicy: IfNotPresent
+      tag: "3.4.0"
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: true
+  tlsEnabled: false
+  hostDomain: pangolin.test
+  className: ""
+  issuer: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+# Additional volumes on the output Deployment definition.
+volumes: []

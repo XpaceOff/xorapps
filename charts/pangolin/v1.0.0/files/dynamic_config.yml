@@ -1,0 +1,21 @@
+http:
+  routers:
+    next-router:
+      rule: Host(`{{ .Values.ingress.hostDomain }}`) && !PathPrefix(`/api/v1`)
+      service: next-service
+      entryPoints: [web]
+    api-router:
+      rule: "Host(`{{ .Values.ingress.hostDomain }}`) && PathPrefix(`/api/v1`)"
+      service: api-service
+      entryPoints: [web]
+    ws-router:
+      rule: "Host(`{{ .Values.ingress.hostDomain }}`)"
+      service: api-service
+      entryPoints: [web]
+  services:
+    next-service:
+      loadBalancer:
+        servers: [{ url: "http://{{ include "pangolin.fullname" . }}-pangolin-cip.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain | default "cluster.local" }}:3002" }]
+    api-service:
+      loadBalancer:
+        servers: [{ url: "http://{{ include "pangolin.fullname" . }}-pangolin-cip.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain | default "cluster.local" }}:3000" }]

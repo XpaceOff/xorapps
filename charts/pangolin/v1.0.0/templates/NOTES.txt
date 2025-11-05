@@ -1,0 +1,6 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $.Values.ingress.hostDomain }}
+{{- end }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+    You can watch its status by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "pangolin.fullname" . }}-gerbil-lb'

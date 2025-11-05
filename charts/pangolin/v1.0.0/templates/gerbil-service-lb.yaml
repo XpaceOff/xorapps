@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pangolin.fullname" . }}-gerbil-lb
+spec:
+  externalTrafficPolicy: Local
+  ports:
+    - name: wg0
+      port: 51820
+      protocol: UDP
+      targetPort: 51820
+    - name: wg1
+      port: 21820
+      protocol: UDP
+      targetPort: 21820
+  selector:
+    app: {{ include "pangolin.fullname" . }}-gerbil
+  type: LoadBalancer

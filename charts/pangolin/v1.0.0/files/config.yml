@@ -1,0 +1,20 @@
+app:
+  dashboard_url: "https://{{ .Values.ingress.hostDomain }}"
+  log_level: info
+  save_logs: true
+
+domains:
+  domain1:
+    base_domain: "{{ .Values.ingress.hostDomain }}"
+
+server:
+  secret: "{{ .Values.settings.pangolin.serverSecretKey }}"
+  internal_hostname: "{{ include "pangolin.fullname" . }}-pangolin-cip.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain | default "cluster.local" }}"
+
+gerbil:
+  base_endpoint: "{{ .Values.ingress.hostDomain }}"
+
+flags:
+  require_email_verification: false
+  disable_signup_without_invite: true
+  disable_user_create_org: true
