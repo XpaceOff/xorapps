@@ -7,6 +7,8 @@ settings:
     serverSecretKey: ''
   traefik:
     badgerVersion: "v1.2.0"
+    certificatesResolver:
+      email: ""
 
 deployments:
   pangolin:
@@ -14,7 +16,7 @@ deployments:
     image:
       repository: "fosrl/pangolin"
       pullPolicy: IfNotPresent
-      tag: "1.11.0"
+      tag: "1.12.1"
   gerbil:
     replicaCount: 1
     image:

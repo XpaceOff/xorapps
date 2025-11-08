@@ -29,11 +29,26 @@ accessLog:
         User-Agent: keep
         X-Forwarded-For: keep
 
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      httpChallenge:
+        entryPoint: web
+      email: {{ .Values.settings.traefik.certificatesResolver.email }}
+      storage: "/letsencrypt/acme.json"
+      caServer: "https://acme-v02.api.letsencrypt.org/directory"
+
 entryPoints:
   web:
     address: ":80"
   websecure:
     address: ":443"
+    transport:
+      respondingTimeouts:
+        readTimeout: "30m"
+    http:
+      tls:
+        certResolver: "letsencrypt"
 
 serversTransport:
   insecureSkipVerify: true
