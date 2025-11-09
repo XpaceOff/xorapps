@@ -12,9 +12,6 @@ helm install pangolin . \
 --set-string volumes[0].name=vol-pangolin \
 --set-string volumes[0].nfs.path=/volume/cluster/pangolin \
 --set-string volumes[0].nfs.server=nas.lan \
---set-string ingress.issuer="letsencrypt-cert-prod" \
---set ingress.tlsEnabled=true \
---set ingress.forceHttps=true \
 -n prod
 
 # Uninstall example:

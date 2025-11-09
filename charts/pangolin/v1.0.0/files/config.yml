@@ -14,6 +14,12 @@ server:
 gerbil:
   base_endpoint: "{{ .Values.ingress.hostDomain }}"
 
+{{- if .Values.settings.pangolin.email.enabled }}
+{{- $email := omit .Values.settings.pangolin.email "enabled" }}
+email:
+{{- toYaml $email | nindent 2 }}
+{{- end }}
+
 flags:
   require_email_verification: false
   disable_signup_without_invite: true

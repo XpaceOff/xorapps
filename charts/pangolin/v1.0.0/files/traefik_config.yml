@@ -16,9 +16,7 @@ log:
   format: "common"
 
 accessLog:
-  # JSON format
   format: json
-  # Filter on status codes, retry attempts and minimal duration
   filters:
     statusCodes:
       - "200-599"
@@ -49,6 +47,12 @@ entryPoints:
     http:
       tls:
         certResolver: "letsencrypt"
+    proxyProtocol:
+      # for testing; better to use trustedIPs in prod
+      insecure: true
+      # OR:
+      # trustedIPs:
+      #   - "10.42.0.0/16"   # your cluster CIDR / ext-traefik pods
 
 serversTransport:
   insecureSkipVerify: true
