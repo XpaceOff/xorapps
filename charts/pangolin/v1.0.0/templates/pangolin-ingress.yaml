@@ -24,5 +24,9 @@ spec:
     services:
       - name: {{ $fullName }}-gerbil-cip
         port: 443
+        {{- if .Values.settings.traefik.proxyProtocol.enabled }}
+        proxyProtocol:
+          version: 2
+        {{- end }}
   tls:
     passthrough: true

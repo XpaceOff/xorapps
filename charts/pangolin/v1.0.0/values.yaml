@@ -7,11 +7,20 @@ settings:
     serverSecretKey: ''
     email:
       enabled: false
+      # smtp_host: ""
+      # smtp_port: 587
+      # smtp_user: ""
+      # smtp_pass: ""
+      # smtp_tls_reject_unauthorized: false
 
   traefik:
     badgerVersion: "v1.2.0"
     certificatesResolver:
       email: ""
+    proxyProtocol:
+      enabled: false
+      insecure: false
+      trustedIPs: []
 
 deployments:
   pangolin:

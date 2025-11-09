@@ -47,12 +47,18 @@ entryPoints:
     http:
       tls:
         certResolver: "letsencrypt"
+    {{- if .Values.settings.traefik.proxyProtocol.enabled }}
     proxyProtocol:
+      {{- if .Values.settings.traefik.proxyProtocol.insecure }}
       # for testing; better to use trustedIPs in prod
       insecure: true
-      # OR:
-      # trustedIPs:
-      #   - "10.42.0.0/16"   # your cluster CIDR / ext-traefik pods
+      {{- else if .Values.settings.traefik.proxyProtocol.trustedIPs }}
+      trustedIPs:
+        {{- range .Values.settings.traefik.proxyProtocol.trustedIPs }}
+        - {{ . | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
 
 serversTransport:
   insecureSkipVerify: true
