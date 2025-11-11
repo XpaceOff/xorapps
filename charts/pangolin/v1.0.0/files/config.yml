@@ -11,6 +11,10 @@ server:
   secret: "{{ .Values.settings.pangolin.serverSecretKey }}"
   internal_hostname: "{{ include "pangolin.fullname" . }}-pangolin-cip.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain | default "cluster.local" }}"
 
+  {{- if .Values.settings.maxmind.enabled }}
+  maxmind_db_path: "/app/config/maxmind/GeoLite2-Country.mmdb"
+  {{- end }}
+
 gerbil:
   base_endpoint: "{{ .Values.ingress.hostDomain }}"
 

@@ -21,6 +21,13 @@ settings:
       enabled: false
       insecure: false
       trustedIPs: []
+  
+  maxmind:
+    enabled: false
+    id: ""
+    key: ""
+    frequency: 24
+    dbs: "GeoLite2-ASN GeoLite2-City GeoLite2-Country"
 
 deployments:
   pangolin:
@@ -41,6 +48,12 @@ deployments:
       repository: "traefik"
       pullPolicy: IfNotPresent
       tag: "3.4.0"
+  maxmind:
+    replicaCount: 1
+    image:
+      repository: "maxmindinc/geoipupdate" 
+      pullPolicy: IfNotPresent
+      tag: "v7.1"
 
 ingress:
   hostDomain: pangolin.test

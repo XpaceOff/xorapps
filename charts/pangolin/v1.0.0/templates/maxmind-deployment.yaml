@@ -1,0 +1,43 @@
+{{- if .Values.settings.maxmind.enabled }}
+{{- $fullName := include "pangolin.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pangolin.fullname" . }}-maxmind
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: maxmind
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: maxmind
+        app: {{ include "pangolin.fullname" . }}-maxmind
+    spec:
+      containers:
+        - name: maxmind
+          image: "{{ .Values.deployments.maxmind.image.repository }}:{{ .Values.deployments.maxmind.image.tag }}"
+          imagePullPolicy: "{{ .Values.deployments.maxmind.image.pullPolicy }}"
+          env:
+            - name: GEOIPUPDATE_ACCOUNT_ID
+              value: "{{ .Values.settings.maxmind.id }}"
+            - name: GEOIPUPDATE_LICENSE_KEY
+              value: "{{ .Values.settings.maxmind.key }}"
+            - name: GEOIPUPDATE_FREQUENCY
+              value: "{{ .Values.settings.maxmind.frequency }}"
+            - name: GEOIPUPDATE_EDITION_IDS
+              value: "{{ .Values.settings.maxmind.dbs }}" 
+          
+          {{- $vols := required "values.volumes must be a non-empty list" .Values.volumes }}
+          {{- $first := required "values.volumes[0] is missing" (index $vols 0) }}
+          {{- $volName := required "values.volumes[0].name is required" $first.name }}
+          volumeMounts:
+            - mountPath: /usr/share/GeoIP
+              name: {{ $volName }}
+              subPath: config/maxmind
+      volumes:
+        {{- toYaml $vols | nindent 8 }}
+{{- end }}
