@@ -1,0 +1,41 @@
+{{- $fullName := include "vaultwarden.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "vaultwarden.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vaultwarden.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vaultwarden.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+        - name: vaultwarden
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.env }}
+          env:
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          
+          {{- $vols := required "values.volumes must be a non-empty list" .Values.volumes }}
+          {{- $first := required "values.volumes[0] is missing" (index $vols 0) }}
+          {{- $volName := required "values.volumes[0].name is required" $first.name }}
+          volumeMounts:
+            - mountPath: /data
+              name: {{ $volName }}
+              subPath: vw-data
+      volumes:
+        {{- toYaml $vols | nindent 8 }}

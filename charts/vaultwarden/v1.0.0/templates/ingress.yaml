@@ -1,0 +1,46 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "vaultwarden.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-in
+  labels:
+    {{- include "vaultwarden.labels" . | nindent 4 }}
+
+  {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
+  annotations:
+  {{- if .Values.ingress.issuer }}
+    cert-manager.io/issuer: {{ .Values.ingress.issuer }}
+  {{- end }}
+  {{- if .Values.ingress.forceHttps }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
+  {{- end }}
+  {{- range $key, $value := .Values.ingress.annotations }}
+  {{- if $value }}
+    {{ $key }}: {{ $value }} 
+  {{- end }}
+  {{- end }}
+  {{- end }}
+spec:
+  {{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer }}
+  tls:
+    - hosts:
+        - {{ index .Values.ingress.hostUrl }}
+      secretName: {{ $fullName }}-jellyfin-tls
+  {{- end }}
+
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.hostUrl }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.hostPath }}
+            pathType: {{ .Values.ingress.hostPathType }}
+            backend:
+              service:
+                name: {{ $fullName }}-cip
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}
