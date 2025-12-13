@@ -35,13 +35,13 @@ deployments:
     image:
       repository: "fosrl/pangolin"
       pullPolicy: IfNotPresent
-      tag: "1.12.2"
+      tag: "1.13.0"
   gerbil:
     replicaCount: 1
     image:
       repository: "fosrl/gerbil"
       pullPolicy: IfNotPresent
-      tag: "1.2.2"
+      tag: "1.3.0"
   traefik:
     replicaCount: 1
     image:
