@@ -12,14 +12,13 @@ experimental:
       version: {{ .Values.settings.traefik.badgerVersion }}
 
 log:
-  level: "DEBUG"
-  format: "common"
+  level: INFO
+  filePath: "/var/log/traefik/traefik.log"
+  format: json
 
 accessLog:
+  filePath: "/var/log/traefik/access.log"
   format: json
-  filters:
-    statusCodes:
-      - "200-599"
   fields:
     headers:
       defaultMode: drop
