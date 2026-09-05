@@ -60,7 +60,7 @@ questions:
     show_if: "storage.type=NFS"
   - variable: storage.nfs.path
     label: "NFS Server's Path"
-    description: "Path on the NFS server exported to the cluster."
+    description: "Path of an EXISTING, EXPORTED directory on the NFS server (e.g. /volume1/cluspi/tmp). Do NOT include a release-specific subfolder here - the chart creates one automatically via subPath. If you get 'No such file or directory' at mount time, the path either doesn't exist on the NAS or isn't in its NFS exports."
     type: string
     required: true
     group: "Storage"
