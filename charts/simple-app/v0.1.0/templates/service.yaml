@@ -1,0 +1,16 @@
+{{- $fullName := include "simple-app.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "simple-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.containerPort }}
+      protocol: TCP
+  selector:
+    {{- include "simple-app.selectorLabels" . | nindent 4 }}

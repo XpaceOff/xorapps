@@ -1,0 +1,9 @@
+{{- $fullName := include "simple-app.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-configs
+  labels:
+    {{- include "simple-app.labels" . | nindent 4 }}
+data:
+  init.sh: {{ .Files.Get "files/init.sh" | quote }}

@@ -1,0 +1,65 @@
+# Default values for simple-app.
+# This is a YAML-formatted file.
+
+replicaCount: 1
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+# Extra environment variables passed straight to the container.
+# List of { name, value } entries.
+env: []
+  # - name: SOME_VAR
+  #   value: "some-value"
+
+# Port the container listens on. Also the target port of the Service.
+containerPort: 80
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  tlsEnabled: false
+  forceHttps: true
+  issuer: ""
+  annotations: {}
+  hostUrl: ""
+  hostPath: /
+  hostPathType: ImplementationSpecific
+
+storage:
+  # When both nfs.hostname and nfs.path are set, the NFS share is mounted
+  # into the container at `mountPath`, scoped by release name via subPath.
+  nfs:
+    hostname: ""
+    path: ""
+  # Where inside the container the NFS volume should be mounted.
+  mountPath: /data
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
