@@ -9,11 +9,43 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
-# Extra environment variables passed straight to the container.
+# Extra environment variables passed straight to the container (non-secret).
 # List of { name, value } entries.
 env: []
   # - name: SOME_VAR
   #   value: "some-value"
+
+# Secret environment variables.
+secrets:
+  # Master toggle. When false, no Secret is rendered and no envFrom is added,
+  # regardless of the fields below. Defaults to false for backward compat.
+  enabled: false
+
+  # Inline secrets as a YAML map. When non-empty, they are merged into the
+  # chart-managed Secret `<fullname>-env` and mounted via envFrom.secretRef.
+  env: {}
+    # DB_PASSWORD: "hunter2"
+    # API_KEY: "abc123"
+
+  # Alternative to `env`: paste a KEY=VALUE .env-style block. Lines are
+  # parsed and merged into the same `<fullname>-env` Secret. Blank lines
+  # and lines starting with `#` are ignored. If a key appears in both
+  # `env` and `envFile`, the value from `env` wins.
+  envFile: ""
+    # Example:
+    #   DB_PASSWORD=hunter2
+    #   # a comment
+    #   API_KEY=abc123
+
+  # Single existing Secret picked from the Rancher UI dropdown. Loaded via
+  # envFrom.secretRef. Leave empty to skip.
+  existingSecret: ""
+
+  # YAML-only: additional existing Secrets in the release namespace. Each
+  # is loaded with envFrom.secretRef. Use this when you need to reference
+  # more than one out-of-band Secret.
+  envFromExisting: []
+    # - my-preexisting-secret
 
 # Port the container listens on. Also the target port of the Service.
 containerPort: 80

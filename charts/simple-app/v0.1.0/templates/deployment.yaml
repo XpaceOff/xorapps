@@ -1,5 +1,8 @@
 {{- $fullName := include "simple-app.fullname" . -}}
 {{- $nfsEnabled := and .Values.storage.nfs.hostname .Values.storage.nfs.path -}}
+{{- $secretsOn := and .Values.secrets .Values.secrets.enabled -}}
+{{- $hasInlineSecrets := and $secretsOn (or .Values.secrets.env .Values.secrets.envFile) -}}
+{{- $hasExternalSecrets := and $secretsOn (or .Values.secrets.existingSecret .Values.secrets.envFromExisting) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -63,6 +66,21 @@ spec:
             - name: http
               containerPort: {{ .Values.containerPort }}
               protocol: TCP
+          {{- if or $hasInlineSecrets $hasExternalSecrets }}
+          envFrom:
+            {{- if $hasInlineSecrets }}
+            - secretRef:
+                name: {{ $fullName }}-env
+            {{- end }}
+            {{- with .Values.secrets.existingSecret }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range .Values.secrets.envFromExisting }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+          {{- end }}
           {{- with .Values.env }}
           env:
             {{- toYaml . | nindent 12 }}

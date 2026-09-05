@@ -40,6 +40,30 @@ questions:
       description: "If enabled, all requests to http will be redirected to https"
 
   #  ________________________________________________________
+  # |_______________________ Security ______________________|
+  - variable: secrets.enabled
+    label: "Enable secret env vars"
+    description: "Inject sensitive environment variables into the container from a Secret."
+    type: boolean
+    default: false
+    required: true
+    group: "Security"
+    show_subquestion_if: true
+    subquestions:
+    - variable: secrets.envFile
+      label: "Paste .env-style secrets (KEY=VALUE per line)"
+      description: "One KEY=VALUE per line. Blank lines and lines starting with # are ignored. These are written into a chart-managed Secret named <release>-env and loaded via envFrom.secretRef."
+      type: multiline
+      required: false
+      default: ""
+    - variable: secrets.existingSecret
+      label: "Or pick an existing Secret in this namespace"
+      description: "Select a Secret you already created (e.g. with `kubectl create secret generic ... --from-file=.env` or `--from-literal=...`). All keys in it become environment variables. Leave empty to skip."
+      type: secret
+      required: false
+      default: ""
+
+  #  ________________________________________________________
   # |_______________________ Storage _______________________|
   - variable: storage.type
     label: "Storage Type"
