@@ -1,0 +1,203 @@
+questions:
+  - variable: ingress.enabled
+    label: Gateway/Ingress Enabled
+    description: Gateway settings for the install.
+    group: "Gateway/Ingress"
+    required: false
+    default: false
+    type: boolean
+    show_subquestion_if: true
+    subquestion:
+      - variable: ingress.className
+        label: Ingress Class Name
+        description: ""
+        group: "Gateway/Ingress"
+        required: false
+        default: ""
+        type: string
+        show_subquestion_if: "ingress.enabled=true"
+      - variable: ingress.tlsEnabled
+        label: TLS Enabled
+        description: "Must be true to enable forceHttps (default)."
+        group: "Gateway/Ingress"
+        required: false
+        default: true
+        type: boolean
+        show_subquestion_if: "ingress.enabled=true"
+      - variable: ingress.hostUrl
+        label: Host URL
+        description: "The domain for this install of LiteLLM."
+        group: "Gateway/Ingress"
+        required: true
+        default: ""
+        type: string
+        show_subquestion_if: "ingress.enabled=true"
+      - variable: ingress.forceHttps
+        label: Force HTTPS
+        description: "Redirect HTTP to HTTPS."
+        group: "Gateway/Ingress"
+        required: false
+        default: true
+        type: boolean
+        show_subquestion_if: "ingress.enabled=true"
+      - variable: ingress.issuer
+        label: Cert-manager Issuer
+        description: ""
+        group: "Gateway/Ingress"
+        required: false
+        default: letsencrypt-prod
+        type: string
+        show_subquestion_if: "ingress.enabled=true"
+
+  - variable: envVars.litellm.masterKey
+    label: Master Key
+    description: LiteLLM master key for authentication.
+    group: "Security"
+    required: true
+    default: ""
+    type: password
+
+  - variable: envVars.litellm.saltKey
+    label: Salt Key
+    description: LiteLLM salt key for additional security.
+    group: "Security"
+    required: true
+    default: ""
+    type: password
+
+  - variable: database.type
+    label: Database
+    description: Deploy a Postgres database with this release, or use an existing one.
+    group: "Database"
+    required: true
+    default: external
+    type: enum
+    options:
+      - value: internal
+        label: Deploy my own Postgres
+      - value: external
+        label: Use an existing Postgres (URL)
+
+  - variable: envVars.litellm.databaseUrl
+    label: Database URL
+    description: PostgreSQL connection string, e.g. postgresql://litellm:password@db:5432/litellm
+    group: "Database"
+    required: true
+    default: ""
+    type: string
+    show_if: "database.type=external"
+
+  - variable: database.internal.user
+    label: Postgres User
+    description: ""
+    group: "Database"
+    required: true
+    default: litellm
+    type: string
+    show_if: "database.type=internal"
+
+  - variable: database.internal.password
+    label: Postgres Password
+    description: Password for the internal Postgres database.
+    group: "Database"
+    required: true
+    default: ""
+    type: password
+    show_if: "database.type=internal"
+
+  - variable: database.internal.dbName
+    label: Postgres Database Name
+    description: ""
+    group: "Database"
+    required: true
+    default: litellm
+    type: string
+    show_if: "database.type=internal"
+
+  - variable: database.internal.image
+    label: Postgres Image
+    description: ""
+    group: "Database"
+    required: false
+    default: postgres:16
+    type: string
+    show_if: "database.type=internal"
+
+  - variable: storage.nfs.hostname
+    label: NFS Server
+    description: NFS server hostname or IP for the internal Postgres data.
+    group: "Storage"
+    required: true
+    default: ""
+    type: hostname
+    show_if: "database.type=internal"
+
+  - variable: storage.nfs.path
+    label: NFS Path
+    description: NFS export path, e.g. /volume1/k8s
+    group: "Storage"
+    required: true
+    default: ""
+    type: string
+    show_if: "database.type=internal"
+
+  - variable: envVars.litellm.storeModelInDb
+    label: Store Models In DB
+    description: Whether to store models in the database.
+    group: "Database"
+    required: false
+    default: "True"
+    type: boolean
+
+  - variable: envVars.litellm.awsAccessKeyId
+    label: AWS Access Key ID
+    description: ""
+    group: "Security"
+    required: false
+    default: ""
+    type: string
+
+  - variable: envVars.litellm.awsSecretAccessKey
+    label: AWS Secret Access Key
+    description: ""
+    group: "Security"
+    required: false
+    default: ""
+    type: password
+
+  - variable: envVars.litellm.awsRegionName
+    label: AWS Region
+    description: ""
+    group: "Security"
+    required: false
+    default: us-east-1
+    type: string
+
+  - variable: image.repository
+    label: Image Repository
+    description: ""
+    group: "Container Images"
+    required: false
+    default: ghcr.io/berriai/litellm
+    type: string
+
+  - variable: image.tag
+    label: Image Tag
+    description: ""
+    group: "Container Images"
+    required: false
+    default: main-stable
+    type: string
+
+  - variable: image.pullPolicy
+    label: Pull Policy
+    description: ""
+    group: "Container Images"
+    required: false
+    default: IfNotPresent
+    type: enum
+    options:
+      - value: IfNotPresent
+        label: IfNotPresent
+      - value: Always
+        label: Always

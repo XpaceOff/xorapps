@@ -1,0 +1,73 @@
+{{- if eq .Values.database.type "internal" }}
+{{- $fullName := include "litellm.fullname" . -}}
+{{- if not (and .Values.storage.nfs.hostname .Values.storage.nfs.path) }}
+{{- fail "database.type=internal requires storage.nfs.hostname and storage.nfs.path" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-db
+  labels:
+    app.kubernetes.io/name: {{ $fullName }}-db
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $fullName }}-db
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $fullName }}-db
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      initContainers:
+        # Create the per-release directory on the NFS share and give it to the postgres user (uid 999)
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - mkdir -p /tmp_mount/{{ $fullName }}/postgres && chown -R 999:999 /tmp_mount/{{ $fullName }}/postgres
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+      containers:
+        - name: postgres
+          image: {{ .Values.database.internal.image | quote }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.database.internal.user | quote }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.database.internal.password | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.database.internal.dbName | quote }}
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.database.internal.user | quote }}, "-d", {{ .Values.database.internal.dbName | quote }}]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /var/lib/postgresql/data
+              subPath: {{ $fullName }}/postgres
+      volumes:
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+{{- end }}

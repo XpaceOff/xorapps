@@ -1,0 +1,73 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/berriai/litellm
+  pullPolicy: IfNotPresent
+  tag: "main-stable"
+
+envVars:
+  litellm:
+    masterKey: ""
+    saltKey: ""
+    databaseUrl: "" # used when database.type=external: postgresql://user:pass@host:5432/dbname
+    storeModelInDb: "True"
+    awsAccessKeyId: ""
+    awsSecretAccessKey: ""
+    awsRegionName: us-east-1
+
+database:
+  # external: use envVars.litellm.databaseUrl
+  # internal: deploy a Postgres 16 workload in this release (data on NFS)
+  type: external
+  internal:
+    image: postgres:16
+    user: litellm
+    password: ""
+    dbName: litellm
+    service:
+      port: 5432
+
+service:
+  type: ClusterIP
+  port: 4000
+
+storage:
+  nfs:
+    hostname: ""
+    path: ""
+
+ingress:
+  enabled: false
+  className: ""
+  tlsEnabled: false
+  forceHttps: true
+  issuer: ""
+  annotations: {}
+  hostUrl: ""
+  hostPath: /
+  hostPathType: Prefix
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

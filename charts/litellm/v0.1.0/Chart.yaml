@@ -1,0 +1,9 @@
+apiVersion: v2
+name: litellm
+description: Helm chart for LiteLLM - an open source proxy server for calling LLM APIs
+
+type: application
+
+version: 0.1.0
+
+appVersion: "main-stable"
