@@ -41,6 +41,14 @@ questions:
       type: boolean
       description: "If enabled, all requests to http will be redirected to https"
 
+  - variable: envVars.litellm.proxyBaseUrl
+    label: "Public URL (email links)"
+    description: "Base URL used in links sent by email, e.g. https://litellm.example.com. Leave empty to use the ingress hostname."
+    type: string
+    required: false
+    default: ""
+    group: "Gateway/Ingress"
+
   #  ________________________________________________________
   # |_______________________ Security ______________________|
   - variable: secretSource
@@ -113,7 +121,7 @@ questions:
   # |_______________________ Database ______________________|
   - variable: database.type
     label: "Database"
-    description: "Deploy a Postgres database with this release, or use an existing one."
+    description: "'Use an existing Postgres (URL)': the connection string comes from the Database URL field, or from DATABASE_URL in the existing Secret if you chose 'Use an existing Secret'. 'Deploy my own Postgres': a Postgres is created in this release; its password comes from the Postgres Password field or POSTGRES_PASSWORD in the existing Secret."
     type: enum
     required: true
     default: "external"
@@ -168,21 +176,20 @@ questions:
 
   - variable: envVars.litellm.storeModelInDb
     label: "Store Models In DB"
-    description: "Whether to store models in the database."
+    description: "When on, models added in the LiteLLM web UI (or via the API) are saved in the database and survive restarts. When off, they are kept in memory only and are lost on restart. Models in the config file are always loaded. Requires a database."
     type: boolean
     required: false
     default: "True"
     group: "Database"
 
-  #  ________________________________________________________
-  # |_______________________ Storage _______________________|
   - variable: storage.type
     label: "Storage Type"
     description: "Storage for the chart-managed Postgres data. 'None' uses ephemeral storage and data is lost when the pod is replaced."
     type: enum
     required: true
     default: "None"
-    group: "Storage"
+    group: "Database"
+    show_if: "database.type=internal"
     options:
       - None
       - NFS
@@ -193,8 +200,8 @@ questions:
     type: string
     required: true
     default: ""
-    group: "Storage"
-    show_if: "storage.type=NFS"
+    group: "Database"
+    show_if: "database.type=internal&&storage.type=NFS"
 
   - variable: storage.nfs.path
     label: "NFS Server's Path"
@@ -202,8 +209,8 @@ questions:
     type: string
     required: true
     default: ""
-    group: "Storage"
-    show_if: "storage.type=NFS"
+    group: "Database"
+    show_if: "database.type=internal&&storage.type=NFS"
 
   - variable: storage.mountPath
     label: "Container Path"
@@ -211,8 +218,8 @@ questions:
     type: string
     required: true
     default: "/var/lib/postgresql/data"
-    group: "Storage"
-    show_if: "storage.type=NFS"
+    group: "Database"
+    show_if: "database.type=internal&&storage.type=NFS"
 
   #  ________________________________________________________
   # |________________________ Image ________________________|

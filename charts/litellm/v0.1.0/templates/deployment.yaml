@@ -1,6 +1,11 @@
 {{- $fullName := include "litellm.fullname" . -}}
 {{- $secretName := printf "%s-config" $fullName -}}
 {{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
+{{- $publicUrl := .Values.envVars.litellm.proxyBaseUrl -}}
+{{- if and (not $publicUrl) .Values.ingress.enabled -}}
+{{- $scheme := ternary "https" "http" .Values.ingress.tlsEnabled -}}
+{{- $publicUrl = printf "%s://%s" $scheme .Values.ingress.hostUrl -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -94,6 +99,9 @@ spec:
                   optional: true
             - name: STORE_MODEL_IN_DB
               value: {{ .Values.envVars.litellm.storeModelInDb | quote }}
+            # Base URL used in links sent by email (invitations, etc.)
+            - name: PROXY_BASE_URL
+              value: {{ $publicUrl | quote }}
             - name: AWS_REGION_NAME
               value: {{ .Values.envVars.litellm.awsRegionName | default "us-east-1" | quote }}
 

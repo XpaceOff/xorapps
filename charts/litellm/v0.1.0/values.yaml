@@ -24,6 +24,8 @@ envVars:
     awsAccessKeyId: ""
     awsSecretAccessKey: ""
     awsRegionName: us-east-1
+    # Public URL for links in emails. Empty = derived from ingress.hostUrl when ingress is enabled.
+    proxyBaseUrl: ""
 
 database:
   # external: use envVars.litellm.databaseUrl
