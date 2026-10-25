@@ -1,7 +1,2 @@
-model_list:
-  - model_name: gpt-oss-20b
-    litellm_params:
-      model: bedrock/openai.gpt-oss-20b-1:0
-      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
-      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
-      aws_region_name: os.environ/AWS_REGION_NAME
+# LiteLLM proxy config. Models are added from the web UI and stored in the database.
+model_list: []

@@ -8,3 +8,7 @@ metadata:
 data:
   config.yaml: |
     {{- .Files.Get "files/config.yaml" | required "files/config.yaml missing" | nindent 4 }}
+    {{- if .Values.disableEnvCredentialLogin }}
+    general_settings:
+      disable_env_credential_login: true
+    {{- end }}

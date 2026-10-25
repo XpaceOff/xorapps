@@ -1,5 +1,9 @@
 replicaCount: 1
 
+# Turn off the shared UI_USERNAME/UI_PASSWORD (or master key) login.
+# Create a regular admin account in the UI first, then set this to true.
+disableEnvCredentialLogin: false
+
 # Where the credentials come from:
 #   create   - chart creates the Secret <release>-config from envVars / database.internal.password
 #   existing - chart uses the Secret named in existingSecret and creates none

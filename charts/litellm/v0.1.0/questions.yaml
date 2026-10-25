@@ -117,6 +117,14 @@ questions:
     default: "us-east-1"
     group: "Security"
 
+  - variable: disableEnvCredentialLogin
+    label: "Disable env credential login"
+    description: "Turns off the shared UI_USERNAME/UI_PASSWORD (or master key) login. Create a regular admin account in the LiteLLM UI first, then enable this."
+    type: boolean
+    required: false
+    default: false
+    group: "Security"
+
   #  ________________________________________________________
   # |_______________________ Database ______________________|
   - variable: database.type
