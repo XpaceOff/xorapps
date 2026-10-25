@@ -1,0 +1,10 @@
+{{- $fullName := include "litellm.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-configs
+  labels:
+    {{- include "litellm.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- .Files.Get "files/config.yaml" | required "files/config.yaml missing" | nindent 4 }}

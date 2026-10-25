@@ -1,4 +1,12 @@
 questions:
+  - variable: existingSecret
+    label: Existing Secret
+    description: Secret in this namespace holding LITELLM_MASTER_KEY, LITELLM_SALT_KEY and DATABASE_URL. Leave empty to create it from the fields below. See README for the command.
+    group: "Security"
+    required: false
+    default: ""
+    type: secret
+
   - variable: ingress.enabled
     label: Gateway/Ingress Enabled
     description: Gateway settings for the install.
@@ -53,7 +61,7 @@ questions:
     label: Master Key
     description: LiteLLM master key for authentication.
     group: "Security"
-    required: true
+    required: false
     default: ""
     type: password
 
@@ -61,7 +69,7 @@ questions:
     label: Salt Key
     description: LiteLLM salt key for additional security.
     group: "Security"
-    required: true
+    required: false
     default: ""
     type: password
 
@@ -82,7 +90,7 @@ questions:
     label: Database URL
     description: PostgreSQL connection string, e.g. postgresql://litellm:password@db:5432/litellm
     group: "Database"
-    required: true
+    required: false
     default: ""
     type: string
     show_if: "database.type=external"
@@ -100,7 +108,7 @@ questions:
     label: Postgres Password
     description: Password for the internal Postgres database.
     group: "Database"
-    required: true
+    required: false
     default: ""
     type: password
     show_if: "database.type=internal"
@@ -186,7 +194,7 @@ questions:
     description: ""
     group: "Container Images"
     required: false
-    default: main-stable
+    default: v1.106.4
     type: string
 
   - variable: image.pullPolicy

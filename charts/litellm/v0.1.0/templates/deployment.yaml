@@ -1,4 +1,5 @@
 {{- $fullName := include "litellm.fullname" . -}}
+{{- $secretName := default (printf "%s-config" $fullName) .Values.existingSecret -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,6 +25,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      automountServiceAccountToken: false
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -36,7 +38,7 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args: ["--config", "/app/config.yaml", "--detailed_debug"]
+          args: ["--config", "/app/config.yaml"]
 
           ports:
             - name: http
@@ -61,26 +63,36 @@ spec:
               port: http
 
           env:
+            # Secrets come from the release Secret, never inline in the Deployment spec
             - name: LITELLM_MASTER_KEY
-              value: {{ .Values.envVars.litellm.masterKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: LITELLM_MASTER_KEY
             - name: LITELLM_SALT_KEY
-              value: {{ .Values.envVars.litellm.saltKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: LITELLM_SALT_KEY
             - name: DATABASE_URL
-              {{- if eq .Values.database.type "internal" }}
-              value: {{ printf "postgresql://%s:%s@%s-db-cip:%v/%s" .Values.database.internal.user .Values.database.internal.password $fullName .Values.database.internal.service.port .Values.database.internal.dbName | quote }}
-              {{- else }}
-              value: {{ .Values.envVars.litellm.databaseUrl | quote }}
-              {{- end }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DATABASE_URL
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: AWS_ACCESS_KEY_ID
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: AWS_SECRET_ACCESS_KEY
+                  optional: true
             - name: STORE_MODEL_IN_DB
               value: {{ .Values.envVars.litellm.storeModelInDb | quote }}
-            {{- if .Values.envVars.litellm.awsAccessKeyId }}
-            - name: AWS_ACCESS_KEY_ID
-              value: {{ .Values.envVars.litellm.awsAccessKeyId | quote }}
-            {{- end }}
-            {{- if .Values.envVars.litellm.awsSecretAccessKey }}
-            - name: AWS_SECRET_ACCESS_KEY
-              value: {{ .Values.envVars.litellm.awsSecretAccessKey | quote }}
-            {{- end }}
             - name: AWS_REGION_NAME
               value: {{ .Values.envVars.litellm.awsRegionName | default "us-east-1" | quote }}
 
@@ -95,8 +107,8 @@ spec:
 
       volumes:
         - name: vol-config-file
-          secret:
-            secretName: {{ $fullName }}-config
+          configMap:
+            name: {{ $fullName }}-configs
 
       {{- with .Values.nodeSelector }}
       nodeSelector:

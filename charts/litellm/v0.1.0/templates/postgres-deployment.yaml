@@ -25,6 +25,7 @@ spec:
         app.kubernetes.io/name: {{ $fullName }}-db
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      automountServiceAccountToken: false
       initContainers:
         # Create the per-release directory on the NFS share and give it to the postgres user (uid 999)
         - name: prepare-nfs-dirs
@@ -49,7 +50,10 @@ spec:
             - name: POSTGRES_USER
               value: {{ .Values.database.internal.user | quote }}
             - name: POSTGRES_PASSWORD
-              value: {{ .Values.database.internal.password | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-config" $fullName) .Values.existingSecret }}
+                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               value: {{ .Values.database.internal.dbName | quote }}
             - name: PGDATA

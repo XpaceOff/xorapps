@@ -1,9 +1,15 @@
 replicaCount: 1
 
+# Name of an existing Secret in this namespace to read credentials from.
+# When set, the chart does not create a Secret and ignores the credential values below.
+# Required keys: LITELLM_MASTER_KEY, LITELLM_SALT_KEY, DATABASE_URL
+# Optional keys: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, POSTGRES_PASSWORD (internal DB only)
+existingSecret: ""
+
 image:
   repository: ghcr.io/berriai/litellm
   pullPolicy: IfNotPresent
-  tag: "main-stable"
+  tag: "v1.106.4"
 
 envVars:
   litellm:
