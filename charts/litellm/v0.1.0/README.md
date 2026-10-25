@@ -36,6 +36,7 @@ Using an existing Secret:
 
 ```bash
 helm install litellm charts/litellm/v0.1.0 -n <namespace> \
+--set secretSource=existing \
 --set existingSecret=litellm-secrets \
 --set ingress.enabled=true \
 --set ingress.tlsEnabled=true \
@@ -43,12 +44,13 @@ helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 --set ingress.hostUrl=litellm.example.com
 ```
 
-Chart-managed Postgres (values are written into the chart's Secret, so prefer `existingSecret`):
+Chart-managed Postgres (values are written into the chart's Secret, so prefer `secretSource=existing`):
 
 ```bash
 helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 --set database.type=internal \
 --set database.internal.password=CHANGE_ME \
+--set storage.type=NFS \
 --set storage.nfs.hostname=nfs.example.com \
 --set storage.nfs.path=/volume1/k8s \
 --set envVars.litellm.masterKey=sk-... \

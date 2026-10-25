@@ -1,7 +1,10 @@
 {{- if eq .Values.database.type "internal" }}
 {{- $fullName := include "litellm.fullname" . -}}
-{{- if not (and .Values.storage.nfs.hostname .Values.storage.nfs.path) }}
-{{- fail "database.type=internal requires storage.nfs.hostname and storage.nfs.path" }}
+{{- $nfs := eq .Values.storage.type "NFS" -}}
+{{- $secretName := printf "%s-config" $fullName -}}
+{{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
+{{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
+{{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
@@ -26,6 +29,7 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       automountServiceAccountToken: false
+      {{- if $nfs }}
       initContainers:
         # Create the per-release directory on the NFS share and give it to the postgres user (uid 999)
         - name: prepare-nfs-dirs
@@ -38,6 +42,7 @@ spec:
           volumeMounts:
             - name: vol-{{ $fullName }}-nfs
               mountPath: /tmp_mount
+      {{- end }}
       containers:
         - name: postgres
           image: {{ .Values.database.internal.image | quote }}
@@ -52,12 +57,13 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ default (printf "%s-config" $fullName) .Values.existingSecret }}
+                  name: {{ $secretName }}
                   key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
               value: {{ .Values.database.internal.dbName | quote }}
+            # A subdirectory avoids initdb failing on the lost+found folder at the mount root
             - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
+              value: {{ printf "%s/pgdata" (.Values.storage.mountPath | trimSuffix "/") | quote }}
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", {{ .Values.database.internal.user | quote }}, "-d", {{ .Values.database.internal.dbName | quote }}]
@@ -66,12 +72,18 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            - name: vol-{{ $fullName }}-nfs
-              mountPath: /var/lib/postgresql/data
+            - name: vol-{{ $fullName }}-data
+              mountPath: {{ .Values.storage.mountPath }}
+              {{- if $nfs }}
               subPath: {{ $fullName }}/postgres
+              {{- end }}
       volumes:
-        - name: vol-{{ $fullName }}-nfs
+        - name: vol-{{ $fullName }}-data
+          {{- if $nfs }}
           nfs:
             server: {{ .Values.storage.nfs.hostname }}
             path: {{ .Values.storage.nfs.path }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
 {{- end }}

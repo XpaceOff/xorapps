@@ -1,5 +1,6 @@
 {{- $fullName := include "litellm.fullname" . -}}
-{{- $secretName := default (printf "%s-config" $fullName) .Values.existingSecret -}}
+{{- $secretName := printf "%s-config" $fullName -}}
+{{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

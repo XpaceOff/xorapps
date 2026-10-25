@@ -1,211 +1,243 @@
 questions:
-  - variable: existingSecret
-    label: Existing Secret
-    description: Secret in this namespace holding LITELLM_MASTER_KEY, LITELLM_SALT_KEY and DATABASE_URL. Leave empty to create it from the fields below. See README for the command.
+
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.hostUrl
+      required: true
+      description: "Hostname to connect to LiteLLM"
+      type: hostname
+      label: "Hostname"
+      default: ""
+    - variable: ingress.hostPath
+      label: "Path"
+      description: "Path prefix served by this ingress"
+      type: string
+      default: "/"
+      required: false
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      default: true
+      required: true
+    - variable: ingress.issuer
+      required: false
+      description: "Name of the cert-manager Issuer used to issue the certificate"
+      type: string
+      label: "Issuer"
+      default: "letsencrypt-prod"
+      show_if: "ingress.tlsEnabled=true"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+
+  #  ________________________________________________________
+  # |_______________________ Security ______________________|
+  - variable: secretSource
+    label: "Credentials Source"
+    description: "Create the credentials Secret from the fields below, or select an existing Secret in this namespace."
+    type: enum
+    required: true
+    default: "create"
     group: "Security"
+    options:
+      - value: create
+        label: "Enter values here"
+      - value: existing
+        label: "Use an existing Secret"
+
+  - variable: existingSecret
+    label: "Existing Secret"
+    description: "Secret in this namespace with keys LITELLM_MASTER_KEY, LITELLM_SALT_KEY, DATABASE_URL (see README)."
+    type: secret
     required: false
     default: ""
-    type: secret
-
-  - variable: ingress.enabled
-    label: Gateway/Ingress Enabled
-    description: Gateway settings for the install.
-    group: "Gateway/Ingress"
-    required: false
-    default: false
-    type: boolean
-    show_subquestion_if: true
-    subquestion:
-      - variable: ingress.className
-        label: Ingress Class Name
-        description: ""
-        group: "Gateway/Ingress"
-        required: false
-        default: ""
-        type: string
-        show_subquestion_if: "ingress.enabled=true"
-      - variable: ingress.tlsEnabled
-        label: TLS Enabled
-        description: "Must be true to enable forceHttps (default)."
-        group: "Gateway/Ingress"
-        required: false
-        default: true
-        type: boolean
-        show_subquestion_if: "ingress.enabled=true"
-      - variable: ingress.hostUrl
-        label: Host URL
-        description: "The domain for this install of LiteLLM."
-        group: "Gateway/Ingress"
-        required: true
-        default: ""
-        type: string
-        show_subquestion_if: "ingress.enabled=true"
-      - variable: ingress.forceHttps
-        label: Force HTTPS
-        description: "Redirect HTTP to HTTPS."
-        group: "Gateway/Ingress"
-        required: false
-        default: true
-        type: boolean
-        show_subquestion_if: "ingress.enabled=true"
-      - variable: ingress.issuer
-        label: Cert-manager Issuer
-        description: ""
-        group: "Gateway/Ingress"
-        required: false
-        default: letsencrypt-prod
-        type: string
-        show_subquestion_if: "ingress.enabled=true"
+    group: "Security"
+    show_if: "secretSource=existing"
 
   - variable: envVars.litellm.masterKey
-    label: Master Key
-    description: LiteLLM master key for authentication.
-    group: "Security"
+    label: "Master Key"
+    description: "LiteLLM master key for authentication."
+    type: password
     required: false
     default: ""
-    type: password
+    group: "Security"
+    show_if: "secretSource=create"
 
   - variable: envVars.litellm.saltKey
-    label: Salt Key
-    description: LiteLLM salt key for additional security.
-    group: "Security"
+    label: "Salt Key"
+    description: "LiteLLM salt key. Do not change after first use."
+    type: password
     required: false
     default: ""
-    type: password
+    group: "Security"
+    show_if: "secretSource=create"
 
+  - variable: envVars.litellm.awsAccessKeyId
+    label: "AWS Access Key ID"
+    description: "Optional. For Bedrock models."
+    type: string
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  - variable: envVars.litellm.awsSecretAccessKey
+    label: "AWS Secret Access Key"
+    description: "Optional. For Bedrock models."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  - variable: envVars.litellm.awsRegionName
+    label: "AWS Region"
+    description: ""
+    type: string
+    required: false
+    default: "us-east-1"
+    group: "Security"
+
+  #  ________________________________________________________
+  # |_______________________ Database ______________________|
   - variable: database.type
-    label: Database
-    description: Deploy a Postgres database with this release, or use an existing one.
-    group: "Database"
-    required: true
-    default: external
+    label: "Database"
+    description: "Deploy a Postgres database with this release, or use an existing one."
     type: enum
+    required: true
+    default: "external"
+    group: "Database"
     options:
       - value: internal
-        label: Deploy my own Postgres
+        label: "Deploy my own Postgres"
       - value: external
-        label: Use an existing Postgres (URL)
+        label: "Use an existing Postgres (URL)"
 
   - variable: envVars.litellm.databaseUrl
-    label: Database URL
-    description: PostgreSQL connection string, e.g. postgresql://litellm:password@db:5432/litellm
-    group: "Database"
+    label: "Database URL"
+    description: "PostgreSQL connection string, e.g. postgresql://litellm:password@db:5432/litellm"
+    type: string
     required: false
     default: ""
-    type: string
-    show_if: "database.type=external"
+    group: "Database"
+    show_if: "database.type=external&&secretSource=create"
 
   - variable: database.internal.user
-    label: Postgres User
-    description: ""
-    group: "Database"
-    required: true
-    default: litellm
+    label: "Postgres User"
     type: string
+    required: true
+    default: "litellm"
+    group: "Database"
     show_if: "database.type=internal"
 
   - variable: database.internal.password
-    label: Postgres Password
-    description: Password for the internal Postgres database.
-    group: "Database"
+    label: "Postgres Password"
+    description: "Password for the chart-managed Postgres."
+    type: password
     required: false
     default: ""
-    type: password
-    show_if: "database.type=internal"
+    group: "Database"
+    show_if: "database.type=internal&&secretSource=create"
 
   - variable: database.internal.dbName
-    label: Postgres Database Name
-    description: ""
-    group: "Database"
-    required: true
-    default: litellm
+    label: "Postgres Database Name"
     type: string
+    required: true
+    default: "litellm"
+    group: "Database"
     show_if: "database.type=internal"
 
   - variable: database.internal.image
-    label: Postgres Image
-    description: ""
-    group: "Database"
+    label: "Postgres Image"
+    type: string
     required: false
-    default: postgres:16
-    type: string
-    show_if: "database.type=internal"
-
-  - variable: storage.nfs.hostname
-    label: NFS Server
-    description: NFS server hostname or IP for the internal Postgres data.
-    group: "Storage"
-    required: true
-    default: ""
-    type: hostname
-    show_if: "database.type=internal"
-
-  - variable: storage.nfs.path
-    label: NFS Path
-    description: NFS export path, e.g. /volume1/k8s
-    group: "Storage"
-    required: true
-    default: ""
-    type: string
+    default: "postgres:16"
+    group: "Database"
     show_if: "database.type=internal"
 
   - variable: envVars.litellm.storeModelInDb
-    label: Store Models In DB
-    description: Whether to store models in the database.
-    group: "Database"
+    label: "Store Models In DB"
+    description: "Whether to store models in the database."
+    type: boolean
     required: false
     default: "True"
-    type: boolean
+    group: "Database"
 
-  - variable: envVars.litellm.awsAccessKeyId
-    label: AWS Access Key ID
-    description: ""
-    group: "Security"
-    required: false
-    default: ""
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: storage.type
+    label: "Storage Type"
+    description: "Storage for the chart-managed Postgres data. 'None' uses ephemeral storage and data is lost when the pod is replaced."
+    type: enum
+    required: true
+    default: "None"
+    group: "Storage"
+    options:
+      - None
+      - NFS
+
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN or IP of the NFS server."
     type: string
-
-  - variable: envVars.litellm.awsSecretAccessKey
-    label: AWS Secret Access Key
-    description: ""
-    group: "Security"
-    required: false
+    required: true
     default: ""
-    type: password
+    group: "Storage"
+    show_if: "storage.type=NFS"
 
-  - variable: envVars.litellm.awsRegionName
-    label: AWS Region
-    description: ""
-    group: "Security"
-    required: false
-    default: us-east-1
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path of an EXISTING, EXPORTED directory on the NFS server (e.g. /volume1/k8s). Do not add a release subfolder; the chart creates one with subPath."
     type: string
+    required: true
+    default: ""
+    group: "Storage"
+    show_if: "storage.type=NFS"
 
+  - variable: storage.mountPath
+    label: "Container Path"
+    description: "Where the storage is mounted in the Postgres container."
+    type: string
+    required: true
+    default: "/var/lib/postgresql/data"
+    group: "Storage"
+    show_if: "storage.type=NFS"
+
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
   - variable: image.repository
-    label: Image Repository
-    description: ""
-    group: "Container Images"
-    required: false
-    default: ghcr.io/berriai/litellm
+    label: "Image Repository"
+    description: "Docker image repository"
     type: string
+    required: true
+    default: "docker.litellm.ai/berriai/litellm"
+    group: "Container Images"
 
   - variable: image.tag
-    label: Image Tag
-    description: ""
-    group: "Container Images"
-    required: false
-    default: v1.106.4
+    label: "Image Tag"
+    description: "LiteLLM version to deploy"
     type: string
+    required: true
+    default: "v1.106.4"
+    group: "Container Images"
 
   - variable: image.pullPolicy
-    label: Pull Policy
-    description: ""
-    group: "Container Images"
-    required: false
-    default: IfNotPresent
+    label: "Pull Policy"
     type: enum
+    required: false
+    default: "IfNotPresent"
+    group: "Container Images"
     options:
-      - value: IfNotPresent
-        label: IfNotPresent
-      - value: Always
-        label: Always
+      - IfNotPresent
+      - Always

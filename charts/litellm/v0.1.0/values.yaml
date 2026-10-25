@@ -1,7 +1,11 @@
 replicaCount: 1
 
-# Name of an existing Secret in this namespace to read credentials from.
-# When set, the chart does not create a Secret and ignores the credential values below.
+# Where the credentials come from:
+#   create   - chart creates the Secret <release>-config from envVars / database.internal.password
+#   existing - chart uses the Secret named in existingSecret and creates none
+secretSource: create
+
+# Name of an existing Secret in this namespace (used when secretSource=existing).
 # Required keys: LITELLM_MASTER_KEY, LITELLM_SALT_KEY, DATABASE_URL
 # Optional keys: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, POSTGRES_PASSWORD (internal DB only)
 existingSecret: ""
@@ -38,14 +42,17 @@ service:
   port: 4000
 
 storage:
+  # None: ephemeral storage for the chart-managed Postgres. NFS: data kept on an NFS share.
+  type: None
   nfs:
     hostname: ""
     path: ""
+  mountPath: /var/lib/postgresql/data
 
 ingress:
   enabled: false
   className: ""
-  tlsEnabled: false
+  tlsEnabled: true
   forceHttps: true
   issuer: ""
   annotations: {}
