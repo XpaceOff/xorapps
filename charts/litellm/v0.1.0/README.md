@@ -80,6 +80,44 @@ helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 --set envVars.litellm.saltKey=...
 ```
 
+## Workers and Redis
+
+By default the chart runs one worker process (`numWorkers: 1`). With one worker and one replica, Redis is not needed.
+
+If you run more than one worker (`numWorkers`) or replica (`replicaCount`), enable Redis so rate limits, budgets, and router state are shared. Without it LiteLLM shows a warning and enforces limits per worker.
+
+Use an existing Redis server:
+
+```bash
+helm upgrade litellm charts/litellm/v0.1.0 -n <namespace> --reuse-values \
+--set numWorkers=4 \
+--set redis.enabled=true \
+--set redis.host=redis.<namespace>.svc.cluster.local \
+--set redis.port=6379 \
+--set redis.password=CHANGE_ME
+```
+
+If you use an existing Secret, add `REDIS_PASSWORD` to it instead of setting `redis.password`. The Secret can be created with:
+
+```bash
+kubectl -n <namespace> create secret generic litellm-secrets \
+  --from-literal=REDIS_PASSWORD='CHANGE_ME' \
+  ...
+```
+
+Redis options:
+
+- **Existing Redis** (`redis.type=external`): set `redis.host` and `redis.port`.
+- **Chart-managed Redis** (`redis.type=internal`): the chart deploys Redis with no persistence. A NetworkPolicy allows connections only from LiteLLM pods in this release.
+
+```bash
+helm upgrade litellm charts/litellm/v0.1.0 -n <namespace> --reuse-values \
+--set redis.enabled=true \
+--set redis.type=internal
+```
+
+The Redis password is optional. Leave `redis.password` empty for no password. The NetworkPolicy is what restricts access in that case, so keep it in place and make sure your cluster's CNI enforces NetworkPolicy.
+
 ## Manual uninstall
 
 ```bash
