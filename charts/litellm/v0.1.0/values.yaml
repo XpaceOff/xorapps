@@ -1,5 +1,16 @@
 replicaCount: 1
 
+# Number of LiteLLM worker processes per pod. Keep at 1 unless Redis is enabled.
+numWorkers: 1
+
+# Redis for shared state (rate limits, budgets, router state, cache invalidation).
+# Required when replicaCount > 1 or numWorkers > 1. Use an existing Redis server.
+redis:
+  enabled: false
+  host: ""
+  port: 6379
+  password: ""
+
 # Turn off the shared UI_USERNAME/UI_PASSWORD (or master key) login.
 # Create a regular admin account in the UI first, then set this to true.
 disableEnvCredentialLogin: false

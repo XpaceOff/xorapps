@@ -231,6 +231,44 @@ questions:
 
   #  ________________________________________________________
   # |________________________ Image ________________________|
+  - variable: numWorkers
+    label: "Number of Workers"
+    description: "LiteLLM worker processes per pod. Keep at 1 unless Redis is enabled."
+    type: int
+    required: true
+    default: 1
+    group: "Container Images"
+
+  - variable: redis.enabled
+    label: "Use Redis"
+    description: "Use an existing Redis for shared state. Required when running more than one worker or replica."
+    type: boolean
+    required: false
+    default: false
+    group: "Redis"
+    show_subquestion_if: true
+    subquestions:
+    - variable: redis.host
+      label: "Redis Host"
+      description: "Hostname or IP of the Redis server"
+      type: string
+      required: true
+      default: ""
+    - variable: redis.port
+      label: "Redis Port"
+      type: int
+      required: true
+      default: 6379
+    - variable: redis.password
+      label: "Redis Password"
+      description: "Leave empty if Redis has no password. Ignored when using an existing Secret (use REDIS_PASSWORD in the Secret)."
+      type: password
+      required: false
+      default: ""
+      show_if: "secretSource=create"
+
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
   - variable: image.repository
     label: "Image Repository"
     description: "Docker image repository"

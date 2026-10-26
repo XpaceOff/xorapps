@@ -44,7 +44,7 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args: ["--config", "/app/config.yaml"]
+          args: ["--config", "/app/config.yaml", "--num_workers", {{ .Values.numWorkers | toString | quote }}]
 
           ports:
             - name: http
@@ -104,6 +104,18 @@ spec:
               value: {{ $publicUrl | quote }}
             - name: AWS_REGION_NAME
               value: {{ .Values.envVars.litellm.awsRegionName | default "us-east-1" | quote }}
+            {{- if .Values.redis.enabled }}
+            - name: REDIS_HOST
+              value: {{ .Values.redis.host | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | toString | quote }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: REDIS_PASSWORD
+                  optional: true
+            {{- end }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
