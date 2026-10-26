@@ -1,0 +1,199 @@
+questions:
+
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.hostUrl
+      required: true
+      description: "Hostname to connect to Hindsight"
+      type: hostname
+      label: "Hostname"
+      default: ""
+    - variable: ingress.hostPath
+      label: "Path"
+      description: "Path prefix served by this ingress"
+      type: string
+      default: "/"
+      required: false
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      default: true
+      required: true
+    - variable: ingress.issuer
+      required: false
+      description: "Name of the cert-manager Issuer used to issue the certificate"
+      type: string
+      label: "Issuer"
+      default: "letsencrypt-prod"
+      show_if: "ingress.tlsEnabled=true"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+    - variable: ingress.api.enabled
+      label: "Separate API hostname"
+      description: "Also expose the Hindsight API (port 8888) on its own hostname, e.g. api.hindsight.example.com."
+      type: boolean
+      default: false
+      required: false
+    - variable: ingress.api.hostUrl
+      label: "API Hostname"
+      description: "Hostname for the API, e.g. api.hindsight.example.com"
+      type: hostname
+      required: true
+      default: ""
+      show_if: "ingress.api.enabled=true"
+
+  #  ________________________________________________________
+  # |_______________________ Security ______________________|
+  - variable: secretSource
+    label: "Credentials Source"
+    description: "Create the credentials Secret from the fields below, or select an existing Secret in this namespace."
+    type: enum
+    required: true
+    default: "create"
+    group: "Security"
+    options:
+      - value: create
+        label: "Enter values here"
+      - value: existing
+        label: "Use an existing Secret"
+
+  - variable: existingSecret
+    label: "Existing Secret"
+    description: "Secret in this namespace with key HINDSIGHT_API_LLM_API_KEY (only needed for providers that use a key)."
+    type: secret
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=existing"
+
+  - variable: llm.apiKey
+    label: "LLM API Key"
+    description: "API key for the LLM endpoint. Required for the openai provider (e.g. your LiteLLM key). Not needed for Ollama."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  #  ________________________________________________________
+  # |_______________________ LLM _________________________|
+  - variable: llm.provider
+    label: "LLM Provider"
+    description: "'openai': any OpenAI-compatible endpoint, such as LiteLLM. 'ollama': a local Ollama server."
+    type: enum
+    required: true
+    default: "openai"
+    group: "LLM"
+    options:
+      - value: openai
+        label: "OpenAI-compatible (e.g. LiteLLM)"
+      - value: ollama
+        label: "Ollama"
+
+  - variable: llm.baseUrl
+    label: "LLM Base URL"
+    description: "OpenAI-compatible: e.g. http://litellm.example.com:4000/v1. Ollama: e.g. http://ollama.example.com:11434/v1."
+    type: string
+    required: true
+    default: ""
+    group: "LLM"
+
+  - variable: llm.model
+    label: "LLM Model"
+    description: "Model name as known to the endpoint, e.g. gpt-oss-20b (openai) or gpt-oss:20b (ollama)."
+    type: string
+    required: true
+    default: ""
+    group: "LLM"
+
+  - variable: llm.maxConcurrent
+    label: "Max Concurrent LLM Requests"
+    type: int
+    required: false
+    default: 4
+    group: "LLM"
+
+  - variable: llm.timeout
+    label: "LLM Timeout (seconds)"
+    type: int
+    required: false
+    default: 300
+    group: "LLM"
+
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: storage.type
+    label: "Storage Type"
+    description: "'None' uses ephemeral storage; the embedded database is lost when the pod is replaced."
+    type: enum
+    required: true
+    default: "None"
+    group: "Storage"
+    options:
+      - None
+      - NFS
+
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN or IP of the NFS server."
+    type: string
+    required: true
+    default: ""
+    group: "Storage"
+    show_if: "storage.type=NFS"
+
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path of an EXISTING, EXPORTED directory on the NFS server (e.g. /volume1/k8s). Do not add a release subfolder; the chart creates one with subPath."
+    type: string
+    required: true
+    default: ""
+    group: "Storage"
+    show_if: "storage.type=NFS"
+
+  - variable: storage.mountPath
+    label: "Container Path"
+    description: "Where the data is mounted in the container (embedded Postgres data directory)."
+    type: string
+    required: true
+    default: "/home/hindsight/.pg0"
+    group: "Storage"
+    show_if: "storage.type=NFS"
+
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
+  - variable: image.repository
+    label: "Image Repository"
+    type: string
+    required: true
+    default: "ghcr.io/vectorize-io/hindsight"
+    group: "Container Images"
+
+  - variable: image.tag
+    label: "Image Tag"
+    type: string
+    required: true
+    default: "latest"
+    group: "Container Images"
+
+  - variable: image.pullPolicy
+    label: "Pull Policy"
+    type: enum
+    required: false
+    default: "IfNotPresent"
+    group: "Container Images"
+    options:
+      - IfNotPresent
+      - Always

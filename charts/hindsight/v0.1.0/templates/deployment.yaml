@@ -1,0 +1,132 @@
+{{- $fullName := include "hindsight.fullname" . -}}
+{{- $secretName := printf "%s-config" $fullName -}}
+{{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
+{{- $nfs := eq .Values.storage.type "NFS" -}}
+{{- $volName := printf "vol-%s-data" $fullName -}}
+{{- if $nfs }}{{- $volName = printf "vol-%s-nfs" $fullName -}}{{- end }}
+{{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
+{{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "hindsight.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "hindsight.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hindsight.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 8888
+              protocol: TCP
+            - name: control
+              containerPort: 9999
+              protocol: TCP
+
+          # Hindsight's health endpoint is not documented here, so use a TCP check on the API port
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+
+          env:
+            # Stable worker identity across restarts (Hindsight docs recommend this in production)
+            - name: HINDSIGHT_API_WORKER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: HINDSIGHT_API_LLM_PROVIDER
+              value: {{ .Values.llm.provider | quote }}
+            {{- if .Values.llm.baseUrl }}
+            - name: HINDSIGHT_API_LLM_BASE_URL
+              value: {{ .Values.llm.baseUrl | quote }}
+            {{- end }}
+            - name: HINDSIGHT_API_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: HINDSIGHT_API_LLM_API_KEY
+                  optional: true
+            - name: HINDSIGHT_API_LLM_MODEL
+              value: {{ .Values.llm.model | quote }}
+            - name: HINDSIGHT_API_LLM_MAX_CONCURRENT
+              value: {{ .Values.llm.maxConcurrent | toString | quote }}
+            - name: HINDSIGHT_API_LLM_TIMEOUT
+              value: {{ .Values.llm.timeout | toString | quote }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            - name: {{ $volName }}
+              mountPath: {{ .Values.storage.mountPath }}
+              {{- if $nfs }}
+              subPath: {{ $fullName }}/pg0
+              {{- end }}
+            # Hindsight uses shared memory; the compose file sets shm_size: 1g
+            - name: vol-dshm
+              mountPath: /dev/shm
+
+      volumes:
+        - name: {{ $volName }}
+          {{- if $nfs }}
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: vol-dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

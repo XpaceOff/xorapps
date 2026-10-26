@@ -1,0 +1,80 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/vectorize-io/hindsight
+  pullPolicy: IfNotPresent
+  # Pin a released version before production use (currently "latest").
+  tag: "1.1.0"
+
+# Where the credentials come from:
+#   create   - chart creates the Secret <release>-config from llm.apiKey
+#   existing - chart uses the Secret named in existingSecret and creates none
+secretSource: create
+
+# Existing Secret (secretSource=existing). Optional key: HINDSIGHT_API_LLM_API_KEY
+existingSecret: ""
+
+llm:
+  # openai: any OpenAI-compatible endpoint (e.g. LiteLLM). ollama: local Ollama server.
+  provider: openai
+  baseUrl: "" # e.g. http://litellm.example.com:4000/v1 or http://ollama.example.com:11434/v1
+  apiKey: ""
+  model: ""
+  maxConcurrent: 4
+  timeout: 300
+
+service:
+  type: ClusterIP
+  # 8888 = Hindsight API, 9999 = Control Plane (web UI). Both are exposed by the Service.
+  port: 8888
+  controlPort: 9999
+
+ingress:
+  enabled: false
+  className: ""
+  # Backend port for the main hostUrl: 9999 routes to the web UI.
+  port: 9999
+  tlsEnabled: true
+  forceHttps: true
+  issuer: ""
+  annotations: {}
+  hostUrl: ""
+  hostPath: /
+  hostPathType: Prefix
+  # Optional second hostname that routes to the API (port 8888), e.g. api.hindsight.example.com.
+  api:
+    enabled: false
+    hostUrl: ""
+
+storage:
+  # None: ephemeral storage. NFS: keep embedded Postgres data (pg0) on an NFS share.
+  type: None
+  nfs:
+    hostname: ""
+    path: ""
+  mountPath: /home/hindsight/.pg0
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

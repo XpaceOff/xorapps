@@ -1,0 +1,20 @@
+{{- $fullName := include "hindsight.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "hindsight.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: 8888
+      protocol: TCP
+    - name: control
+      port: {{ .Values.service.controlPort }}
+      targetPort: 9999
+      protocol: TCP
+  selector:
+    {{- include "hindsight.selectorLabels" . | nindent 4 }}

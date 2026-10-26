@@ -1,0 +1,11 @@
+{{- if and .Values.ingress.enabled .Values.ingress.forceHttps -}}
+{{- $fullName := include "hindsight.fullname" . -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-tm-tohttps
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}
