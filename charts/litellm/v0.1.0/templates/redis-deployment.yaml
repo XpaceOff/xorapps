@@ -1,0 +1,52 @@
+{{- if and .Values.redis.enabled (eq .Values.redis.type "internal") }}
+{{- $fullName := include "litellm.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-redis
+  labels:
+    app.kubernetes.io/name: {{ $fullName }}-redis
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $fullName }}-redis
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $fullName }}-redis
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: {{ .Values.redis.internal.image | quote }}
+          imagePullPolicy: IfNotPresent
+          # With REDIS_PASSWORD empty, Redis runs without authentication.
+          command: ["/bin/sh", "-c"]
+          args:
+            - if [ -n "$REDIS_PASSWORD" ]; then exec redis-server --requirepass "$REDIS_PASSWORD"; else exec redis-server; fi
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-config" $fullName) (ternary .Values.existingSecret "" (eq .Values.secretSource "existing")) }}
+                  key: REDIS_PASSWORD
+                  optional: true
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}

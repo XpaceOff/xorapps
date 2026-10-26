@@ -106,9 +106,9 @@ spec:
               value: {{ .Values.envVars.litellm.awsRegionName | default "us-east-1" | quote }}
             {{- if .Values.redis.enabled }}
             - name: REDIS_HOST
-              value: {{ .Values.redis.host | quote }}
+              value: {{ (eq .Values.redis.type "internal" | ternary (printf "%s-redis-cip" $fullName) .Values.redis.host) | quote }}
             - name: REDIS_PORT
-              value: {{ .Values.redis.port | toString | quote }}
+              value: {{ (eq .Values.redis.type "internal" | ternary 6379 .Values.redis.port) | toString | quote }}
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:

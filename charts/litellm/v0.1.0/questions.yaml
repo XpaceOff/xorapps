@@ -241,27 +241,40 @@ questions:
 
   - variable: redis.enabled
     label: "Use Redis"
-    description: "Use an existing Redis for shared state. Required when running more than one worker or replica."
+    description: "Shared state for rate limits, budgets, and router state. Required when running more than one worker or replica."
     type: boolean
     required: false
     default: false
     group: "Redis"
     show_subquestion_if: true
     subquestions:
+    - variable: redis.type
+      label: "Redis"
+      description: "'Use an existing Redis': connect to a Redis server you run. 'Deploy my own Redis': a Redis is created in this release (no persistence), reachable only by LiteLLM."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: internal
+          label: "Deploy my own Redis"
+        - value: external
+          label: "Use an existing Redis"
     - variable: redis.host
       label: "Redis Host"
-      description: "Hostname or IP of the Redis server"
+      description: "Hostname or IP of the existing Redis server"
       type: string
-      required: true
+      required: false
       default: ""
+      show_if: "redis.type=external"
     - variable: redis.port
       label: "Redis Port"
       type: int
-      required: true
+      required: false
       default: 6379
+      show_if: "redis.type=external"
     - variable: redis.password
       label: "Redis Password"
-      description: "Leave empty if Redis has no password. Ignored when using an existing Secret (use REDIS_PASSWORD in the Secret)."
+      description: "Leave empty for no password. Ignored when using an existing Secret (put REDIS_PASSWORD in the Secret instead)."
       type: password
       required: false
       default: ""

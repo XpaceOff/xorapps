@@ -4,12 +4,18 @@ replicaCount: 1
 numWorkers: 1
 
 # Redis for shared state (rate limits, budgets, router state, cache invalidation).
-# Required when replicaCount > 1 or numWorkers > 1. Use an existing Redis server.
+# Required when replicaCount > 1 or numWorkers > 1.
+#   external - connect to an existing Redis at redis.host:redis.port
+#   internal - deploy Redis in this release (no persistence). Only LiteLLM pods may connect (NetworkPolicy).
 redis:
   enabled: false
+  type: external
   host: ""
   port: 6379
+  # Leave empty for no Redis password (allowed; the NetworkPolicy then restricts access to LiteLLM).
   password: ""
+  internal:
+    image: redis:7
 
 # Turn off the shared UI_USERNAME/UI_PASSWORD (or master key) login.
 # Create a regular admin account in the UI first, then set this to true.
