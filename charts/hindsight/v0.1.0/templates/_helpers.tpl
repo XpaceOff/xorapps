@@ -37,3 +37,12 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "hindsight.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/* Service account name */}}
+{{- define "hindsight.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "hindsight.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}

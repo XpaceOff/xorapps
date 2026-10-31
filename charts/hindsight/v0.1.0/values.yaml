@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/vectorize-io/hindsight
   pullPolicy: IfNotPresent
-  # Pin a released version before production use (currently "latest").
+  # Upstream releases: https://github.com/vectorize-io/hindsight/releases
   tag: "1.1.0"
 
 # Where the credentials come from:
@@ -22,6 +22,12 @@ llm:
   model: ""
   maxConcurrent: 4
   timeout: 300
+
+# Stable worker identity (HINDSIGHT_API_WORKER_ID). Hindsight warns when this
+# changes between pod restarts: tasks left in "processing" under the old
+# hostname are never recovered. Empty = the release name, which is stable.
+# Only set it if you run more than one pod, and then make it unique per pod.
+workerId: ""
 
 service:
   type: ClusterIP
@@ -52,7 +58,13 @@ storage:
   nfs:
     hostname: ""
     path: ""
+  # Where the data is mounted in the container (embedded Postgres data directory).
   mountPath: /home/hindsight/.pg0
+
+serviceAccount:
+  # This chart does not create a ServiceAccount resource.
+  create: false
+  name: ""
 
 imagePullSecrets: []
 nameOverride: ""

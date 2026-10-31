@@ -2,8 +2,6 @@
 {{- $secretName := printf "%s-config" $fullName -}}
 {{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
 {{- $nfs := eq .Values.storage.type "NFS" -}}
-{{- $volName := printf "vol-%s-data" $fullName -}}
-{{- if $nfs }}{{- $volName = printf "vol-%s-nfs" $fullName -}}{{- end }}
 {{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
 {{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
 {{- end }}
@@ -33,6 +31,29 @@ spec:
         {{- end }}
     spec:
       automountServiceAccountToken: false
+
+      {{- if $nfs }}
+      # Creates the release directory on the NFS share and fixes its
+      # permissions, so the subPath mount in the main container can start.
+      initContainers:
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}' 'pg0'
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
+      {{- end }}
+
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -54,24 +75,32 @@ spec:
               containerPort: 9999
               protocol: TCP
 
-          # Hindsight's health endpoint is not documented here, so use a TCP check on the API port
+          # /health/live is in-process only (never touches the database), so a slow
+          # or unreachable database does not restart the pod.
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # /health verifies the database is reachable: a pod that cannot reach it
+          # is taken out of the Service until it recovers.
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health
               port: http
             initialDelaySeconds: 10
-            periodSeconds: 10
-          livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 60
-            periodSeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
 
           env:
-            # Stable worker identity across restarts (Hindsight docs recommend this in production)
+            # Stable worker identity: must survive pod restarts, otherwise tasks
+            # left in "processing" are never recovered.
             - name: HINDSIGHT_API_WORKER_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
+              value: {{ .Values.workerId | default $fullName | quote }}
             - name: HINDSIGHT_API_LLM_PROVIDER
               value: {{ .Values.llm.provider | quote }}
             {{- if .Values.llm.baseUrl }}
@@ -83,7 +112,9 @@ spec:
                 secretKeyRef:
                   name: {{ $secretName }}
                   key: HINDSIGHT_API_LLM_API_KEY
+                  {{- if ne .Values.llm.provider "openai" }}
                   optional: true
+                  {{- end }}
             - name: HINDSIGHT_API_LLM_MODEL
               value: {{ .Values.llm.model | quote }}
             - name: HINDSIGHT_API_LLM_MAX_CONCURRENT
@@ -95,24 +126,33 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
 
           volumeMounts:
-            - name: {{ $volName }}
+            {{- if $nfs }}
+            - name: vol-{{ $fullName }}-nfs
               mountPath: {{ .Values.storage.mountPath }}
-              {{- if $nfs }}
               subPath: {{ $fullName }}/pg0
-              {{- end }}
+            {{- else }}
+            - name: vol-{{ $fullName }}-data
+              mountPath: {{ .Values.storage.mountPath }}
+            {{- end }}
             # Hindsight uses shared memory; the compose file sets shm_size: 1g
             - name: vol-dshm
               mountPath: /dev/shm
 
       volumes:
-        - name: {{ $volName }}
-          {{- if $nfs }}
+        {{- if $nfs }}
+        - name: vol-{{ $fullName }}-nfs
           nfs:
             server: {{ .Values.storage.nfs.hostname }}
             path: {{ .Values.storage.nfs.path }}
-          {{- else }}
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        - name: vol-empty-tmp
           emptyDir: {}
-          {{- end }}
+        {{- else }}
+        - name: vol-{{ $fullName }}-data
+          emptyDir: {}
+        {{- end }}
         - name: vol-dshm
           emptyDir:
             medium: Memory

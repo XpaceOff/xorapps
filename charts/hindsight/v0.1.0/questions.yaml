@@ -185,7 +185,7 @@ questions:
     label: "Image Tag"
     type: string
     required: true
-    default: "latest"
+    default: "1.1.0"
     group: "Container Images"
 
   - variable: image.pullPolicy
