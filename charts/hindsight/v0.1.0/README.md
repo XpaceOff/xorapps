@@ -27,13 +27,26 @@ routes to the Control Plane (`ingress.port`, default `9999`); enable
 - `internal`: the hostname is only resolved by the internal DNS (e.g.
   `hindsight.cluster`). A public CA cannot issue a certificate for such a name,
   so the chart renders plain HTTP: no TLS block, no `cert-manager.io/issuer`
-  annotation and no HTTPS redirect middleware.
+  annotation and no HTTPS redirect middleware. In addition, the Traefik
+  `ipAllowList` middleware rejects every source outside
+  `ingress.internalAllowedCidrs` with **403** — DNS alone is not access
+  control, since anyone who knows the Traefik IP can send a request with the
+  right `Host` header. The default allows every private range (RFC 1918):
+  `10.0.0.0/8` (includes the pods of this cluster), `172.16.0.0/12` and
+  `192.168.0.0/16` (includes this LAN). Public sources are always rejected.
 
 ```bash
 helm install hindsight charts/hindsight/v0.1.0 -n <namespace> \
 --set ingress.enabled=true \
 --set ingress.exposure=internal \
 --set ingress.hostUrl=hindsight.cluster
+```
+
+To allow only specific networks:
+
+```bash
+helm upgrade hindsight charts/hindsight/v0.1.0 -n <namespace> --reuse-values \
+--set ingress.internalAllowedCidrs="192.168.8.0/24,10.42.0.0/16"
 ```
 
 Without an Ingress at all (`ingress.enabled=false`), the app is only reachable

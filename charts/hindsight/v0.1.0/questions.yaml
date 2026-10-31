@@ -21,6 +21,13 @@ questions:
           label: "External (public)"
         - value: internal
           label: "Internal (cluster only)"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach this internal ingress. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust, e.g. 192.168.8.0/24,10.42.0.0/16."
+      type: string
+      required: true
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal"
     - variable: ingress.hostUrl
       required: true
       description: "Hostname to connect to Hindsight"

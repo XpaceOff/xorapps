@@ -3,6 +3,14 @@
 {{- $internal := eq .Values.ingress.exposure "internal" -}}
 {{- $tls := and .Values.ingress.tlsEnabled .Values.ingress.issuer (not $internal) -}}
 {{- $forceHttps := and .Values.ingress.forceHttps (not $internal) -}}
+{{- $ipAllow := and $internal .Values.ingress.internalAllowedCidrs -}}
+{{- $middlewares := list -}}
+{{- if $forceHttps -}}
+{{- $middlewares = append $middlewares (printf "%s-%s-tm-tohttps@kubernetescrd" .Release.Namespace $fullName) -}}
+{{- end -}}
+{{- if $ipAllow -}}
+{{- $middlewares = append $middlewares (printf "%s-%s-tm-ipallowlist@kubernetescrd" .Release.Namespace $fullName) -}}
+{{- end -}}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1
 {{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -19,8 +27,8 @@ metadata:
   {{- if and .Values.ingress.issuer (not $internal) }}
     cert-manager.io/issuer: {{ .Values.ingress.issuer }}
   {{- end }}
-  {{- if $forceHttps }}
-    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
+  {{- if $middlewares }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ join "," $middlewares }}
   {{- end }}
   {{- range $key, $value := .Values.ingress.annotations }}
   {{- if $value }}
