@@ -59,7 +59,7 @@ helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 --set existingSecret=litellm-secrets \
 --set ingress.enabled=true \
 --set ingress.tlsEnabled=true \
---set ingress.issuer=letsencrypt-prod \
+--set ingress.issuer=letsencrypt-cert-prod \
 --set ingress.hostUrl=litellm.example.com
 ```
 
@@ -75,6 +75,31 @@ helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 --set envVars.litellm.masterKey=sk-... \
 --set envVars.litellm.saltKey=...
 ```
+
+## Ingress exposure
+
+`ingress.exposure` decides how the app is published:
+
+- `external` (default): public hostname, TLS from cert-manager, redirect to HTTPS.
+  `ingress.issuer` must be a cert-manager `Issuer` **in the namespace where the
+  app is installed** (`cert-manager.io/issuer` is resolved in the same
+  namespace). Available in this cluster: `letsencrypt-cert-prod`,
+  `letsencrypt-cert-staging`, `rancher`.
+- `internal`: the hostname is only resolved by the internal DNS (e.g.
+  `litellm.cluster`). A public CA cannot issue a certificate for such a name,
+  so the chart renders plain HTTP: no TLS block, no `cert-manager.io/issuer`
+  annotation and no HTTPS redirect middleware.
+
+```bash
+helm install litellm charts/litellm/v0.1.0 -n <namespace> \
+--set ingress.enabled=true \
+--set ingress.exposure=internal \
+--set ingress.hostUrl=litellm.cluster
+```
+
+Without an Ingress at all (`ingress.enabled=false`), the app is only reachable
+in-cluster through the Service:
+`http://<release>-litellm-cip.<namespace>.svc.cluster.local:4000`.
 
 ## Workers and Redis
 

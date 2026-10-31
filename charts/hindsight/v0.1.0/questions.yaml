@@ -10,6 +10,17 @@ questions:
     group: "Gateway/Ingress"
     show_subquestion_if: true
     subquestions:
+    - variable: ingress.exposure
+      label: "Exposure"
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS (e.g. hindsight.cluster) - no public certificate can be issued for such a name, so TLS and the HTTPS redirect are skipped."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: external
+          label: "External (public)"
+        - value: internal
+          label: "Internal (cluster only)"
     - variable: ingress.hostUrl
       required: true
       description: "Hostname to connect to Hindsight"
@@ -27,19 +38,28 @@ questions:
       type: boolean
       default: true
       required: true
+      show_if: "ingress.exposure=external"
     - variable: ingress.issuer
-      required: false
-      description: "Name of the cert-manager Issuer used to issue the certificate"
-      type: string
+      required: true
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer (prod) or use the YAML editor to name another one."
+      type: enum
       label: "Issuer"
-      default: "letsencrypt-prod"
-      show_if: "ingress.tlsEnabled=true"
+      default: "letsencrypt-cert-prod"
+      show_if: "ingress.tlsEnabled=true&&ingress.exposure=external"
+      options:
+        - value: letsencrypt-cert-prod
+          label: "Let's Encrypt (production)"
+        - value: letsencrypt-cert-staging
+          label: "Let's Encrypt (staging)"
+        - value: rancher
+          label: "Self-signed (Rancher CA)"
     - variable: ingress.forceHttps
       label: "Use HTTPS only"
       default: true
       required: true
       type: boolean
       description: "If enabled, all requests to http will be redirected to https"
+      show_if: "ingress.exposure=external"
     - variable: ingress.api.enabled
       label: "Separate API hostname"
       description: "Also expose the Hindsight API (port 8888) on its own hostname, e.g. api.hindsight.example.com."

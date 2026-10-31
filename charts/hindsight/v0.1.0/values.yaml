@@ -38,6 +38,11 @@ service:
 ingress:
   enabled: false
   className: ""
+  # external: public hostname, TLS from cert-manager, redirect to HTTPS.
+  # internal: hostname resolved only by the internal DNS (e.g. app.cluster).
+  #           No public certificate is possible for such a name, so TLS and
+  #           the HTTPS redirect are not rendered.
+  exposure: external
   # Backend port for the main hostUrl: 9999 routes to the web UI.
   port: 9999
   tlsEnabled: true

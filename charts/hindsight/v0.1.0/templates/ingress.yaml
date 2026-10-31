@@ -1,6 +1,9 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "hindsight.fullname" . -}}
 {{- $svcPort := .Values.ingress.port -}}
+{{- $internal := eq .Values.ingress.exposure "internal" -}}
+{{- $tls := and .Values.ingress.tlsEnabled .Values.ingress.issuer (not $internal) -}}
+{{- $forceHttps := and .Values.ingress.forceHttps (not $internal) -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
@@ -18,12 +21,12 @@ metadata:
   name: {{ $fullName }}-in
   labels:
     {{- include "hindsight.labels" . | nindent 4 }}
-  {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
+  {{- if or .Values.ingress.annotations $tls $forceHttps }}
   annotations:
-  {{- if .Values.ingress.issuer }}
+  {{- if and .Values.ingress.issuer (not $internal) }}
     cert-manager.io/issuer: {{ .Values.ingress.issuer }}
   {{- end }}
-  {{- if .Values.ingress.forceHttps }}
+  {{- if $forceHttps }}
     traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
   {{- end }}
   {{- range $key, $value := .Values.ingress.annotations }}
@@ -33,7 +36,7 @@ metadata:
   {{- end }}
   {{- end }}
 spec:
-  {{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer }}
+  {{- if $tls }}
   tls:
     - hosts:
         - {{ .Values.ingress.hostUrl | quote }}

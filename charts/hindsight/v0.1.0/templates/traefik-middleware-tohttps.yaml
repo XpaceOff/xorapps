@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled .Values.ingress.forceHttps -}}
+{{- if and .Values.ingress.enabled .Values.ingress.forceHttps (ne .Values.ingress.exposure "internal") -}}
 {{- $fullName := include "hindsight.fullname" . -}}
 apiVersion: traefik.io/v1alpha1
 kind: Middleware

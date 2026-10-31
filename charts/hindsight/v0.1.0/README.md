@@ -15,6 +15,33 @@ Both ports are exposed by the `ClusterIP` Service. The main ingress hostname
 routes to the Control Plane (`ingress.port`, default `9999`); enable
 `ingress.api.enabled` to expose the API on a second hostname.
 
+## Ingress exposure
+
+`ingress.exposure` decides how the app is published:
+
+- `external` (default): public hostname, TLS from cert-manager, redirect to HTTPS.
+  `ingress.issuer` must be a cert-manager `Issuer` **in the namespace where the
+  app is installed** (`cert-manager.io/issuer` is resolved in the same
+  namespace). Available in this cluster: `letsencrypt-cert-prod`,
+  `letsencrypt-cert-staging`, `rancher`.
+- `internal`: the hostname is only resolved by the internal DNS (e.g.
+  `hindsight.cluster`). A public CA cannot issue a certificate for such a name,
+  so the chart renders plain HTTP: no TLS block, no `cert-manager.io/issuer`
+  annotation and no HTTPS redirect middleware.
+
+```bash
+helm install hindsight charts/hindsight/v0.1.0 -n <namespace> \
+--set ingress.enabled=true \
+--set ingress.exposure=internal \
+--set ingress.hostUrl=hindsight.cluster
+```
+
+Without an Ingress at all (`ingress.enabled=false`), the app is only reachable
+in-cluster through the Service:
+
+- API: `http://<release>-hindsight-cip.<namespace>.svc.cluster.local:8888`
+- Control Plane: `http://<release>-hindsight-cip.<namespace>.svc.cluster.local:9999`
+
 ## Credentials
 
 Credentials come from a Secret in the install namespace. Either create it from the form (**Credentials Source: Enter values here**) or select an existing one (**Use an existing Secret**).
