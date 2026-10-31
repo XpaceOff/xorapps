@@ -78,36 +78,39 @@ helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 
 ## Ingress exposure
 
-`ingress.exposure` decides how the app is published:
+`ingress.exposure` decides which hostnames are published:
 
-- `external` (default): public hostname, TLS from cert-manager, redirect to HTTPS.
-  `ingress.issuer` must be a cert-manager `Issuer` **in the namespace where the
-  app is installed** (`cert-manager.io/issuer` is resolved in the same
-  namespace). Available in this cluster: `letsencrypt-cert-prod`,
-  `letsencrypt-cert-staging`, `rancher`.
-- `internal`: the hostname is only resolved by the internal DNS (e.g.
-  `litellm.cluster`). A public CA cannot issue a certificate for such a name,
-  so the chart renders plain HTTP: no TLS block, no `cert-manager.io/issuer`
-  annotation and no HTTPS redirect middleware. In addition, the Traefik
-  `ipAllowList` middleware rejects every source outside
-  `ingress.internalAllowedCidrs` with **403** — DNS alone is not access
-  control, since anyone who knows the Traefik IP can send a request with the
-  right `Host` header. The default allows every private range (RFC 1918):
-  `10.0.0.0/8` (includes the pods of this cluster), `172.16.0.0/12` and
-  `192.168.0.0/16` (includes this LAN). Public sources are always rejected.
+- `external` (default): the **public** hostname (`ingress.hostUrl`), TLS from
+  cert-manager, redirect to HTTPS. `ingress.issuer` must be a cert-manager
+  `Issuer` **in the namespace where the app is installed**
+  (`cert-manager.io/issuer` is resolved in the same namespace). Available in
+  this cluster: `letsencrypt-cert-prod`, `letsencrypt-cert-staging`, `rancher`.
+- `internal`: the **internal** hostname (`ingress.internalHostUrl`), resolved
+  only by the internal DNS. A public CA cannot issue a certificate for such a
+  name, so it is served over plain HTTP. The Traefik `ipAllowList` middleware
+  rejects every source outside `ingress.internalAllowedCidrs` with **403** —
+  DNS alone is not access control, since anyone who knows the Traefik IP can
+  send a request with the right `Host` header. The default allows every
+  private range (RFC 1918): `10.0.0.0/8`, `172.16.0.0/12` and
+  `192.168.0.0/16`. Public sources are always rejected.
+- `both`: both hostnames are published side by side. They are separate
+  Traefik routers, so the public one keeps its certificate and HTTPS redirect
+  while the internal one stays on HTTP and is restricted to the allowed
+  networks.
 
 ```bash
 helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 --set ingress.enabled=true \
---set ingress.exposure=internal \
---set ingress.hostUrl=litellm.cluster
+--set ingress.exposure=both \
+--set ingress.hostUrl=litellm.example.com \
+--set ingress.internalHostUrl=litellm.internal
 ```
 
-To allow only specific networks:
+To allow only specific networks on the internal hostname:
 
 ```bash
 helm upgrade litellm charts/litellm/v0.1.0 -n <namespace> --reuse-values \
---set ingress.internalAllowedCidrs="192.168.8.0/24,10.42.0.0/16"
+--set ingress.internalAllowedCidrs="10.0.0.0/8,192.168.0.0/16"
 ```
 
 Without an Ingress at all (`ingress.enabled=false`), the app is only reachable

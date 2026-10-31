@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled .Values.ingress.forceHttps (ne .Values.ingress.exposure "internal") -}}
+{{- if and .Values.ingress.enabled .Values.ingress.forceHttps (or (eq .Values.ingress.exposure "external") (eq .Values.ingress.exposure "both")) -}}
 {{- $fullName := include "litellm.fullname" . -}}
 apiVersion: traefik.io/v1alpha1
 kind: Middleware

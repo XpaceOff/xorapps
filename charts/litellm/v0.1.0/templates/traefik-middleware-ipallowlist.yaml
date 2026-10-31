@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled (eq .Values.ingress.exposure "internal") .Values.ingress.internalAllowedCidrs -}}
+{{- if and .Values.ingress.enabled (or (eq .Values.ingress.exposure "internal") (eq .Values.ingress.exposure "both")) .Values.ingress.internalHostUrl .Values.ingress.internalAllowedCidrs -}}
 {{- $fullName := include "litellm.fullname" . -}}
 {{- $cidrs := .Values.ingress.internalAllowedCidrs -}}
 {{- if not (kindIs "slice" $cidrs) -}}

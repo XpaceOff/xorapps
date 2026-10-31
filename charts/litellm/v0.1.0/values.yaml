@@ -75,25 +75,26 @@ storage:
 ingress:
   enabled: false
   className: ""
-  # external: public hostname, TLS from cert-manager, redirect to HTTPS.
-  # internal: hostname resolved only by the internal DNS (e.g. app.cluster).
-  #           No public certificate is possible for such a name, so TLS and
-  #           the HTTPS redirect are not rendered.
+  # Which hostnames to publish:
+  #   external - the public hostname only (certificate + HTTPS redirect)
+  #   internal - the internal hostname only (HTTP, restricted to allowed networks)
+  #   both     - both hostnames, each with its own rules
   exposure: external
-  # Networks allowed to reach an internal ingress (comma separated CIDRs).
+  # Public hostname (used when exposure is external or both)
+  hostUrl: ""
+  tlsEnabled: true
+  forceHttps: true
+  issuer: letsencrypt-cert-prod
+  # Internal hostname (used when exposure is internal or both)
+  internalHostUrl: ""
+  # Networks allowed to reach the internal ingress (comma separated CIDRs).
   # Enforced by the Traefik ipAllowList middleware: every other source gets
   # 403, even if it knows the hostname and sends the right Host header.
   # Default = every private range (RFC 1918), so any internal network works:
-  #   10.0.0.0/8     - includes the pods of this cluster (10.42.0.0/16)
-  #   172.16.0.0/12
-  #   192.168.0.0/16 - includes this LAN (192.168.8.0/24)
-  # Narrow it down to the ranges you trust, e.g. "192.168.8.0/24,10.42.0.0/16".
+  #   10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+  # Narrow it down to the ranges you trust.
   internalAllowedCidrs: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-  tlsEnabled: true
-  forceHttps: true
-  issuer: ""
   annotations: {}
-  hostUrl: ""
   hostPath: /
   hostPathType: Prefix
 

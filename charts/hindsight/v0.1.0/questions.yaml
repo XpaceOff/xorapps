@@ -12,7 +12,7 @@ questions:
     subquestions:
     - variable: ingress.exposure
       label: "Exposure"
-      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS (e.g. hindsight.cluster) - no public certificate can be issued for such a name, so TLS and the HTTPS redirect are skipped."
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side."
       type: enum
       required: true
       default: "external"
@@ -21,19 +21,22 @@ questions:
           label: "External (public)"
         - value: internal
           label: "Internal (cluster only)"
-    - variable: ingress.internalAllowedCidrs
-      label: "Allowed Networks"
-      description: "Comma separated CIDR ranges allowed to reach this internal ingress. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust, e.g. 192.168.8.0/24,10.42.0.0/16."
-      type: string
-      required: true
-      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-      show_if: "ingress.exposure=internal"
+        - value: both
+          label: "Both (public + internal)"
     - variable: ingress.hostUrl
-      required: true
-      description: "Hostname to connect to Hindsight"
+      required: false
+      description: "Public hostname of the web UI. Required when the exposure is External or Both."
       type: hostname
-      label: "Hostname"
+      label: "Public Hostname"
       default: ""
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalHostUrl
+      required: false
+      description: "Internal hostname of the web UI, resolved only by the internal DNS. Required when the exposure is Internal or Both."
+      type: hostname
+      label: "Internal Hostname"
+      default: ""
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
     - variable: ingress.hostPath
       label: "Path"
       description: "Path prefix served by this ingress"
@@ -45,14 +48,14 @@ questions:
       type: boolean
       default: true
       required: true
-      show_if: "ingress.exposure=external"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
     - variable: ingress.issuer
-      required: true
-      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer (prod) or use the YAML editor to name another one."
+      required: false
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer or use the YAML editor to name another one."
       type: enum
       label: "Issuer"
       default: "letsencrypt-cert-prod"
-      show_if: "ingress.tlsEnabled=true&&ingress.exposure=external"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
       options:
         - value: letsencrypt-cert-prod
           label: "Let's Encrypt (production)"
@@ -66,7 +69,14 @@ questions:
       required: true
       type: boolean
       description: "If enabled, all requests to http will be redirected to https"
-      show_if: "ingress.exposure=external"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach the internal hostname. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust."
+      type: string
+      required: false
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
     - variable: ingress.api.enabled
       label: "Separate API hostname"
       description: "Also expose the Hindsight API (port 8888) on its own hostname, e.g. api.hindsight.example.com."
@@ -74,10 +84,17 @@ questions:
       default: false
       required: false
     - variable: ingress.api.hostUrl
-      label: "API Hostname"
-      description: "Hostname for the API, e.g. api.hindsight.example.com"
+      label: "Public API Hostname"
+      description: "Public hostname for the API, e.g. api.hindsight.example.com. Used when the exposure is External or Both."
       type: hostname
-      required: true
+      required: false
+      default: ""
+      show_if: "ingress.api.enabled=true"
+    - variable: ingress.api.internalHostUrl
+      label: "Internal API Hostname"
+      description: "Internal hostname for the API, resolved only by the internal DNS. Used when the exposure is Internal or Both."
+      type: hostname
+      required: false
       default: ""
       show_if: "ingress.api.enabled=true"
 

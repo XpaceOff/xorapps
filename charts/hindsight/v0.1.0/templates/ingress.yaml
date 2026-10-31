@@ -1,16 +1,17 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "hindsight.fullname" . -}}
 {{- $svcPort := .Values.ingress.port -}}
-{{- $internal := eq .Values.ingress.exposure "internal" -}}
-{{- $tls := and .Values.ingress.tlsEnabled .Values.ingress.issuer (not $internal) -}}
-{{- $forceHttps := and .Values.ingress.forceHttps (not $internal) -}}
-{{- $ipAllow := and $internal .Values.ingress.internalAllowedCidrs -}}
+{{- $exposure := .Values.ingress.exposure -}}
+{{- $public := or (eq $exposure "external") (eq $exposure "both") -}}
+{{- if $public -}}
+{{- if not (or .Values.ingress.hostUrl .Values.ingress.api.hostUrl) -}}
+{{- fail "ingress.hostUrl is required when ingress.exposure is 'external' or 'both'" -}}
+{{- end -}}
+{{- $tls := and .Values.ingress.tlsEnabled .Values.ingress.issuer -}}
+{{- $forceHttps := .Values.ingress.forceHttps -}}
 {{- $middlewares := list -}}
 {{- if $forceHttps -}}
 {{- $middlewares = append $middlewares (printf "%s-%s-tm-tohttps@kubernetescrd" .Release.Namespace $fullName) -}}
-{{- end -}}
-{{- if $ipAllow -}}
-{{- $middlewares = append $middlewares (printf "%s-%s-tm-ipallowlist@kubernetescrd" .Release.Namespace $fullName) -}}
 {{- end -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
@@ -31,7 +32,7 @@ metadata:
     {{- include "hindsight.labels" . | nindent 4 }}
   {{- if or .Values.ingress.annotations $tls $middlewares }}
   annotations:
-  {{- if and .Values.ingress.issuer (not $internal) }}
+  {{- if .Values.ingress.issuer }}
     cert-manager.io/issuer: {{ .Values.ingress.issuer }}
   {{- end }}
   {{- if $middlewares }}
@@ -69,4 +70,5 @@ spec:
               serviceName: {{ $fullName }}-cip
               servicePort: {{ $svcPort }}
               {{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}
