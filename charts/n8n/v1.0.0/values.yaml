@@ -34,9 +34,9 @@ runners:
   nativePythonRunner: false
   # Seconds of inactivity before the runner process shuts down. 0 disables it.
   autoShutdownTimeout: 15
-  # Number of runner instances the launcher keeps ready.
-  maxConcurrency: 10
   # Optional launcher config, mounted at /etc/n8n-task-runners.json.
+  # Leave empty to use the (locked down) config that ships with the image - the
+  # launcher refuses to start with a config file that lists no task runners.
   # Example:
   #   launcherConfig:
   #     task-runners:

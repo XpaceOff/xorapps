@@ -48,6 +48,14 @@ questions:
     required: true
     show_if: "envVars.n8n.dbType=postgresdb"
     group: "Database"
+  - variable: envVars.n8n.sqlitePoolSize
+    label: "SQLite Pool Size"
+    description: "Connection pool size of the embedded database. Only used with the sqlite database."
+    type: int
+    required: false
+    default: 2
+    show_if: "envVars.n8n.dbType=sqlite"
+    group: "Database"
   
   #  ________________________________________________________
   # |_________________________ MAIL ________________________|
@@ -112,7 +120,7 @@ questions:
     subquestions:
     - variable: ingress.exposure
       label: "Exposure"
-      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side."
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side - n8n still knows only one editor URL and one webhook URL (see below), the other hostname is just an extra way to open the editor."
       type: enum
       required: true
       default: "external"
@@ -125,14 +133,14 @@ questions:
           label: "Both (public + internal)"
     - variable: ingress.hostUrl
       required: false
-      description: "Public hostname to connect to n8n. Required when the exposure is External or Both."
+      description: "Public hostname of n8n, reachable from the internet (e.g. n8n.example.com). Gets a certificate from cert-manager and redirects to HTTPS. n8n also uses it as the editor and webhook URL unless you set them below."
       type: hostname
       label: "Public Hostname"
       default: ""
       show_if: "ingress.exposure=external||ingress.exposure=both"
     - variable: ingress.internalHostUrl
       required: false
-      description: "Internal hostname, resolved only by the internal DNS. Required when the exposure is Internal or Both."
+      description: "Internal hostname of n8n, resolved only by the internal DNS (e.g. n8n.cluster). Served over plain HTTP and restricted to the Allowed Networks below, so it is not reachable from outside your network."
       type: hostname
       label: "Internal Hostname"
       default: ""
@@ -174,7 +182,7 @@ questions:
 
   - variable: envVars.n8n.editorBaseUrl
     label: "Editor URL"
-    description: "Public URL of the n8n editor, e.g. https://n8n.example.com/. Leave empty to use the ingress hostname. n8n sends this URL back to the browser - without it the chat trigger and the webhook widget fail with 'Failed to receive response'."
+    description: "The address the browser uses to talk to n8n (N8N_EDITOR_BASE_URL). Used for the links in emails (invitations, password reset) and for the callbacks the chat trigger makes. Must be reachable from the browser, otherwise the chat trigger fails with 'Failed to receive response'. n8n knows only ONE editor URL, so with both hostnames published this decides which one the browser is sent to. Leave empty to use the Public Hostname, or the Internal Hostname when only the internal one is published."
     type: string
     required: false
     default: ""
@@ -182,7 +190,7 @@ questions:
 
   - variable: envVars.n8n.webhookUrl
     label: "Webhook URL"
-    description: "Public base URL used to build production webhook URLs, e.g. https://n8n.example.com/. Leave empty to use the ingress hostname."
+    description: "The base address n8n uses to build the webhook URLs it hands out (WEBHOOK_URL): the Chat Trigger and Webhook node URLs, form triggers and the production URLs you copy into other systems. Must be reachable by whoever calls those webhooks. n8n knows only ONE webhook URL, so with both hostnames published this decides which one your integrations get. Leave empty to use the Public Hostname, or the Internal Hostname when only the internal one is published."
     type: string
     required: false
     default: ""
@@ -224,12 +232,6 @@ questions:
       type: int
       required: false
       default: 15
-    - variable: runners.maxConcurrency
-      label: "Max Concurrency"
-      description: "Number of runner instances kept ready. 0 keeps the default of the image."
-      type: int
-      required: false
-      default: 0
 
   #  ________________________________________________________
   # |______________________ Security _______________________|
@@ -279,14 +281,6 @@ questions:
     type: string
     required: false
     default: "[]"
-    group: "User"
-
-  - variable: envVars.n8n.sqlitePoolSize
-    label: "SQLite Pool Size"
-    description: "Connection pool size of the embedded database (sqlite only)."
-    type: int
-    required: false
-    default: 2
     group: "User"
 
   - variable: envVars.n8n.restrictFileAccessTo

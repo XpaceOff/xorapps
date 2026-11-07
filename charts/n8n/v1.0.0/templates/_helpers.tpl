@@ -33,12 +33,17 @@ Create chart name and version as used by the chart label.
 {{/*
 Launcher config for the task runners, mounted at /etc/n8n-task-runners.json.
 Empty = use the (locked down) config that ships with the image.
+A config file must list the task runners, otherwise the launcher refuses to start.
 */}}
 {{- define "n8n.runnersLauncherConfig" -}}
 {{- if .Values.runners.launcherConfig -}}
+{{- if not (kindIs "map" .Values.runners.launcherConfig) -}}
+{{- fail "runners.launcherConfig must be a map" -}}
+{{- end -}}
+{{- if not (hasKey .Values.runners.launcherConfig "task-runners") -}}
+{{- fail "runners.launcherConfig must contain a 'task-runners' list - the launcher rejects a config file without any task runner" -}}
+{{- end -}}
 {{- .Values.runners.launcherConfig | toJson -}}
-{{- else if gt (int .Values.runners.maxConcurrency) 0 -}}
-{{- dict "runnerConfig" (dict "maxConcurrency" (int .Values.runners.maxConcurrency)) | toJson -}}
 {{- end -}}
 {{- end -}}
 

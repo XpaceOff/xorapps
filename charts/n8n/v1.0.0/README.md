@@ -39,8 +39,12 @@ Optional runner settings:
 | `runners.replicaCount` | Number of runner pods |
 | `runners.nativePythonRunner` | Run Python code inside the n8n process |
 | `runners.autoShutdownTimeout` | Seconds of inactivity before the runner exits (0 = never) |
-| `runners.maxConcurrency` | Runner instances kept ready (0 = the image default) |
 | `runners.launcherConfig` | Custom launcher config, mounted at `/etc/n8n-task-runners.json` |
+
+By default **no** launcher config is mounted, so the launcher uses the locked
+down config that ships with the image. A custom config must list the task
+runners (`task-runners:`), otherwise the launcher refuses to start with
+`config file ... contains no task runners`.
 
 ## Ingress exposure
 
