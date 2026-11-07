@@ -1,7 +1,46 @@
-n8n Helm Chart
+# n8n Helm Chart
 
-Deploys [n8n](https://n8n.io) with an optional NFS-backed data directory and an
-optional Traefik ingress.
+Deploys [n8n](https://n8n.io) with an optional NFS-backed data directory, task
+runners and an optional Traefik ingress.
+
+## Task runners
+
+n8n 2.x runs the Code node in a separate process (the *task runner*). The chart
+deploys it as its own workload:
+
+| Component | Image | Purpose |
+|---|---|---|
+| n8n | `n8nio/n8n:2.47.2` | editor, API and the task **broker** (port 5679) |
+| runners | `n8nio/runners:2.47.2` | executes the JavaScript/Python code |
+
+The runner image version **must match the n8n version exactly**. Leave
+`runners.image.tag` empty to always use the n8n image tag.
+
+Both share the secret `N8N_RUNNERS_AUTH_TOKEN`:
+
+- `secretSource=create`: put the token in `runners.authToken` (the form field
+  *Runners Auth Token*). It is rendered into the release Secret
+  `<release>-config`.
+- `secretSource=existing`: the chart uses the Secret named in
+  `existingSecret`, which must contain the key `N8N_RUNNERS_AUTH_TOKEN`.
+
+```bash
+kubectl -n <namespace> create secret generic n8n-secrets \
+  --from-literal=N8N_RUNNERS_AUTH_TOKEN="$(openssl rand -hex 32)"
+```
+
+The broker listens on `0.0.0.0:5679` inside the n8n pod and is published on
+the ClusterIP Service only — the ingress never routes it.
+
+Optional runner settings:
+
+| Value | Description |
+|---|---|
+| `runners.replicaCount` | Number of runner pods |
+| `runners.nativePythonRunner` | Run Python code inside the n8n process |
+| `runners.autoShutdownTimeout` | Seconds of inactivity before the runner exits (0 = never) |
+| `runners.maxConcurrency` | Runner instances kept ready (0 = the image default) |
+| `runners.launcherConfig` | Custom launcher config, mounted at `/etc/n8n-task-runners.json` |
 
 ## Ingress exposure
 
@@ -61,13 +100,31 @@ helm install n8n charts/n8n/v1.0.0 -n <namespace> \
 ## Storage
 
 `storage.nfs.hostname` and `storage.nfs.path` point at an **existing,
-exported** directory (e.g. `/volume1/k8s`). The chart mounts two subpaths of
-it, `<release>/n8n_data` (the n8n database and config) and `<release>/files`
-(uploads). An init container creates both directories on the share before the
-main container starts, so a fresh install works.
+exported** directory (e.g. `/volume1/k8s`). The chart mounts four subpaths of
+it: `<release>/n8n_data` (the n8n database and config), `<release>/files`
+(uploads), `<release>/backups` and `<release>/secrets`. An init container
+creates them on the share before the main container starts, so a fresh install
+works.
 
 Leave the NFS fields empty to run without persistent storage — the database
 is then lost when the pod is replaced.
+
+## Environment variables
+
+Besides the database and SMTP settings, the chart sets:
+
+| Variable | Value |
+|---|---|
+| `N8N_EDITOR_BASE_URL` | `<scheme>://<hostname><hostPath>` — what the browser calls back |
+| `WEBHOOK_URL` | `<scheme>://<hostname>/` — production webhook URLs |
+| `N8N_HOST` | `<hostname>` (no protocol) |
+| `TZ` | `envVars.n8n.timezone` |
+| `NODE_FUNCTION_ALLOW_BUILTIN` | `envVars.n8n.nodeFunctionAllowBuiltin` |
+| `NODES_EXCLUDE` | `envVars.n8n.nodesExclude` |
+| `DB_SQLITE_POOL_SIZE` | `envVars.n8n.sqlitePoolSize` |
+| `N8N_RESTRICT_FILE_ACCESS_TO` | `envVars.n8n.restrictFileAccessTo` |
+| `N8N_SKIP_AUTH_ON_OAUTH_CALLBACK` | `envVars.n8n.skipAuthOnOauthCallback` |
+| `N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS` | `envVars.n8n.enforceSettingsFilePermissions` |
 
 ## Manual install
 
@@ -79,6 +136,7 @@ helm install n8n charts/n8n/v1.0.0 -n <namespace> \
 --set envVars.n8n.dbName=n8n \
 --set envVars.n8n.dbUser=n8n-user \
 --set envVars.n8n.dbPass=CHANGE_ME \
+--set runners.authToken="$(openssl rand -hex 32)" \
 --set storage.nfs.hostname=nfs.example.com \
 --set storage.nfs.path=/volume1/k8s \
 --set ingress.enabled=true \

@@ -13,5 +13,12 @@ spec:
       port: {{ .Values.service.port }}
       targetPort: 5678
       protocol: TCP
+    {{- if .Values.runners.enabled }}
+    # Task broker: the runners container connects to it (cluster internal only).
+    - name: broker
+      port: 5679
+      targetPort: 5679
+      protocol: TCP
+    {{- end }}
   selector:
     {{- include "n8n.selectorLabels" . | nindent 4 }}

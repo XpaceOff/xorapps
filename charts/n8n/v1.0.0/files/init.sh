@@ -7,6 +7,8 @@ release_dir="/tmp_mount/$1"
 # container starts, so create the release directories on first install.
 mkdir -p "$release_dir/n8n_data"
 mkdir -p "$release_dir/files"
+mkdir -p "$release_dir/backups"
+mkdir -p "$release_dir/secrets"
 
 if [ -d "$release_dir" ]; then
 	echo "Permission before:"

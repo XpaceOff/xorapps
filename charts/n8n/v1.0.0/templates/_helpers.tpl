@@ -31,6 +31,18 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
+Launcher config for the task runners, mounted at /etc/n8n-task-runners.json.
+Empty = use the (locked down) config that ships with the image.
+*/}}
+{{- define "n8n.runnersLauncherConfig" -}}
+{{- if .Values.runners.launcherConfig -}}
+{{- .Values.runners.launcherConfig | toJson -}}
+{{- else if gt (int .Values.runners.maxConcurrency) 0 -}}
+{{- dict "runnerConfig" (dict "maxConcurrency" (int .Values.runners.maxConcurrency)) | toJson -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Common labels
 */}}
 {{- define "n8n.labels" -}}

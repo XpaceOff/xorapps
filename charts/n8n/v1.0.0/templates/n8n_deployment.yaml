@@ -1,4 +1,6 @@
 {{- $fullName := include "n8n.fullname" . -}}
+{{- $secretName := printf "%s-config" $fullName -}}
+{{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
 {{- $nfs := and .Values.storage.nfs.hostname .Values.storage.nfs.path -}}
 {{- $scheme := "http" -}}
 {{- $publicHost := "" -}}
@@ -77,6 +79,16 @@ spec:
           image: "{{ .Values.image.n8n.repository }}:{{ .Values.image.n8n.tag }}"
           imagePullPolicy: {{ .Values.image.n8n.pullPolicy }}
 
+          ports:
+            - name: webui
+              containerPort: 5678
+              protocol: TCP
+            {{- if .Values.runners.enabled }}
+            - name: broker
+              containerPort: 5679
+              protocol: TCP
+            {{- end }}
+
           env:
             # DB VARIABLES
             - name: DB_TYPE
@@ -114,6 +126,36 @@ spec:
             # LOG VARS
             - name: N8N_LOG_LEVEL
               value: "{{ .Values.envVars.n8n.logLevel }}"
+            - name: TZ
+              value: {{ .Values.envVars.n8n.timezone | quote }}
+            - name: NODE_FUNCTION_ALLOW_BUILTIN
+              value: {{ .Values.envVars.n8n.nodeFunctionAllowBuiltin | quote }}
+            - name: NODES_EXCLUDE
+              value: {{ .Values.envVars.n8n.nodesExclude | quote }}
+            - name: DB_SQLITE_POOL_SIZE
+              value: {{ .Values.envVars.n8n.sqlitePoolSize | toString | quote }}
+            - name: N8N_RESTRICT_FILE_ACCESS_TO
+              value: {{ .Values.envVars.n8n.restrictFileAccessTo | quote }}
+            - name: N8N_SKIP_AUTH_ON_OAUTH_CALLBACK
+              value: {{ .Values.envVars.n8n.skipAuthOnOauthCallback | toString | quote }}
+            - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+              value: {{ .Values.envVars.n8n.enforceSettingsFilePermissions | toString | quote }}
+
+            # TASK RUNNERS
+            # The runners container connects to the broker that runs here.
+            {{- if .Values.runners.enabled }}
+            - name: N8N_RUNNERS_ENABLED
+              value: "true"
+            - name: N8N_RUNNERS_MODE
+              value: "external"
+            - name: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
+              value: "0.0.0.0"
+            - name: N8N_RUNNERS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: N8N_RUNNERS_AUTH_TOKEN
+            {{- end }}
 
             # PUBLIC URL
             # n8n hands these URLs back to the browser (chat trigger, webhook
@@ -143,6 +185,12 @@ spec:
             - mountPath: /files
               name: vol-{{ $fullName }}-nfs
               subPath: {{ $fullName }}/files
+            - mountPath: /backups
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/backups
+            - mountPath: /secrets
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/secrets
           {{- end }}
 
       {{- if $nfs }}

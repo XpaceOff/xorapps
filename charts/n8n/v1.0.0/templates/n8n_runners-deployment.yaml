@@ -1,0 +1,103 @@
+{{- if .Values.runners.enabled -}}
+{{- $fullName := include "n8n.fullname" . -}}
+{{- $secretName := printf "%s-config" $fullName -}}
+{{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-runners
+  labels:
+    {{- include "n8n.labels" . | nindent 4 }}
+    app.kubernetes.io/component: runners
+spec:
+  replicas: {{ .Values.runners.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "n8n.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: runners
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "n8n.labels" . | nindent 8 }}
+        app.kubernetes.io/component: runners
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: runners
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          # The runners image version must match the n8n version exactly.
+          image: "{{ .Values.runners.image.repository }}:{{ .Values.runners.image.tag | default .Values.image.n8n.tag }}"
+          imagePullPolicy: {{ .Values.runners.image.pullPolicy }}
+
+          ports:
+            - name: launcher
+              containerPort: 5680
+              protocol: TCP
+
+          readinessProbe:
+            tcpSocket:
+              port: launcher
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          env:
+            # The task broker lives in the n8n container on port 5679.
+            - name: N8N_RUNNERS_TASK_BROKER_URI
+              value: {{ printf "http://%s-cip:5679" $fullName | quote }}
+            - name: N8N_RUNNERS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: N8N_RUNNERS_AUTH_TOKEN
+            - name: N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT
+              value: {{ .Values.runners.autoShutdownTimeout | toString | quote }}
+            {{- if .Values.runners.nativePythonRunner }}
+            - name: N8N_NATIVE_PYTHON_RUNNER
+              value: "true"
+            {{- end }}
+
+          resources:
+            {{- toYaml .Values.runners.resources | nindent 12 }}
+
+          {{- if (include "n8n.runnersLauncherConfig" .) }}
+          volumeMounts:
+            - name: vol-runners-config
+              mountPath: /etc/n8n-task-runners.json
+              subPath: n8n-task-runners.json
+              readOnly: true
+          {{- end }}
+
+      {{- if (include "n8n.runnersLauncherConfig" .) }}
+      volumes:
+        - name: vol-runners-config
+          configMap:
+            name: {{ $fullName }}-runners-configs
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end -}}

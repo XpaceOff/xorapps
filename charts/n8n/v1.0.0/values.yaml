@@ -7,7 +7,44 @@ image:
   n8n:
     repository: n8nio/n8n
     pullPolicy: IfNotPresent
-    tag: "1.118.2"
+    tag: "2.47.2"
+
+# Where the runner auth token comes from:
+#   create   - chart creates the Secret <release>-config from runners.authToken
+#   existing - chart uses the Secret named in existingSecret and creates none
+secretSource: create
+
+# Existing Secret (secretSource=existing). Required key: N8N_RUNNERS_AUTH_TOKEN
+existingSecret: ""
+
+# Task runners (n8n 2.x runs Code node code in a separate process).
+# https://docs.n8n.io/hosting/configuration/task-runners/
+runners:
+  enabled: true
+  image:
+    repository: n8nio/runners
+    pullPolicy: IfNotPresent
+    # The runners image version MUST match the n8n version exactly.
+    # Empty = the n8n image tag.
+    tag: ""
+  replicaCount: 1
+  # Shared secret between n8n and the runners. Required when secretSource=create.
+  authToken: ""
+  # Native python runner (n8n runs python code without a separate container).
+  nativePythonRunner: false
+  # Seconds of inactivity before the runner process shuts down. 0 disables it.
+  autoShutdownTimeout: 15
+  # Number of runner instances the launcher keeps ready.
+  maxConcurrency: 10
+  # Optional launcher config, mounted at /etc/n8n-task-runners.json.
+  # Example:
+  #   launcherConfig:
+  #     task-runners:
+  #       - runner-type: javascript
+  #         env-overrides:
+  #           NODE_FUNCTION_ALLOW_BUILTIN: crypto
+  launcherConfig: {}
+  resources: {}
 
 envVars:
   n8n:
@@ -31,6 +68,19 @@ envVars:
 
     # OTHERS
     logLevel: "info"
+    timezone: "UTC"
+    # Builtin Node.js modules the Code node may use ("*" = all).
+    nodeFunctionAllowBuiltin: "*"
+    # Nodes to exclude from the editor, as a JSON array.
+    nodesExclude: "[]"
+    # Only used with the sqlite database.
+    sqlitePoolSize: 2
+    # Restrict which paths the Code node may read/write (";" separated).
+    restrictFileAccessTo: "/files;/secrets"
+    # Set to false to allow the OAuth callback without the n8n session cookie.
+    skipAuthOnOauthCallback: false
+    # Make the settings file in .n8n readable only by the n8n user.
+    enforceSettingsFilePermissions: true
 
     # PUBLIC URL
     # n8n builds the URLs it hands back to the browser (chat trigger, webhooks)

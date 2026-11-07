@@ -189,6 +189,131 @@ questions:
     group: "Gateway/Ingress"
 
   #  ________________________________________________________
+  # |____________________ Task Runners _____________________|
+  - variable: runners.enabled
+    label: "Enable Task Runners"
+    description: "n8n 2.x runs the Code node in a separate runner process. Disable only for throwaway instances."
+    type: boolean
+    default: true
+    required: true
+    group: "Task Runners"
+    show_subquestion_if: true
+    subquestions:
+    - variable: runners.authToken
+      label: "Runners Auth Token"
+      description: "Shared secret between n8n and the runners. Use a long random value, e.g. openssl rand -hex 32. Leave empty when using an existing Secret."
+      type: password
+      required: false
+      default: ""
+      show_if: "secretSource=create"
+    - variable: runners.replicaCount
+      label: "Runner Replicas"
+      description: "Number of runner pods."
+      type: int
+      required: false
+      default: 1
+    - variable: runners.nativePythonRunner
+      label: "Native Python Runner"
+      description: "Run Python code in the n8n process instead of the runner container."
+      type: boolean
+      required: false
+      default: false
+    - variable: runners.autoShutdownTimeout
+      label: "Auto Shutdown Timeout (seconds)"
+      description: "Seconds of inactivity before the runner process shuts down. 0 disables it."
+      type: int
+      required: false
+      default: 15
+    - variable: runners.maxConcurrency
+      label: "Max Concurrency"
+      description: "Number of runner instances kept ready. 0 keeps the default of the image."
+      type: int
+      required: false
+      default: 0
+
+  #  ________________________________________________________
+  # |______________________ Security _______________________|
+  - variable: secretSource
+    label: "Credentials Source"
+    description: "Create the credentials Secret from the field below, or select an existing Secret in this namespace."
+    type: enum
+    required: true
+    default: "create"
+    group: "Security"
+    options:
+      - value: create
+        label: "Enter values here"
+      - value: existing
+        label: "Use an existing Secret"
+
+  - variable: existingSecret
+    label: "Existing Secret"
+    description: "Secret in this namespace with the key N8N_RUNNERS_AUTH_TOKEN (only needed when the task runners are enabled)."
+    type: secret
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=existing"
+
+  #  ________________________________________________________
+  # |______________________ General _________________________|
+  - variable: envVars.n8n.timezone
+    label: "Timezone"
+    description: "Timezone of the n8n container, e.g. America/New_York."
+    type: string
+    required: false
+    default: "UTC"
+    group: "User"
+
+  - variable: envVars.n8n.nodeFunctionAllowBuiltin
+    label: "Allowed Builtin Modules"
+    description: "Builtin Node.js modules the Code node may use (* = all)."
+    type: string
+    required: false
+    default: "*"
+    group: "User"
+
+  - variable: envVars.n8n.nodesExclude
+    label: "Excluded Nodes"
+    description: "Nodes to hide from the editor, as a JSON array, e.g. [\"n8n-nodes-base.executeCommand\"]."
+    type: string
+    required: false
+    default: "[]"
+    group: "User"
+
+  - variable: envVars.n8n.sqlitePoolSize
+    label: "SQLite Pool Size"
+    description: "Connection pool size of the embedded database (sqlite only)."
+    type: int
+    required: false
+    default: 2
+    group: "User"
+
+  - variable: envVars.n8n.restrictFileAccessTo
+    label: "Restrict File Access"
+    description: "Paths the Code node may read and write, separated by ;."
+    type: string
+    required: false
+    default: "/files;/secrets"
+    group: "User"
+
+  - variable: envVars.n8n.skipAuthOnOauthCallback
+    label: "Skip Auth On OAuth Callback"
+    description: "Allow the OAuth callback without the n8n session cookie."
+    type: boolean
+    required: false
+    default: false
+    group: "User"
+
+  - variable: envVars.n8n.enforceSettingsFilePermissions
+    label: "Enforce Settings File Permissions"
+    description: "Make the settings file in .n8n readable only by the n8n user."
+    type: boolean
+    required: false
+    default: true
+    group: "User"
+
+  #  ________________________________________________________
   # |_______________________ Storage _______________________|
   - variable: storage.type
     label: "Storage Type"
@@ -229,6 +354,24 @@ questions:
       label: "Image Tag"
       description: "Docker image tag for n8n"
       type: string
+
+  - variable: runners.image.repository
+    label: "Runners Image Repository"
+    description: "Docker image repository for the task runners. The version must match the n8n version exactly."
+    type: string
+    required: false
+    default: "n8nio/runners"
+    group: "Container Images"
+    show_if: "runners.enabled=true"
+
+  - variable: runners.image.tag
+    label: "Runners Image Tag"
+    description: "Docker image tag for the task runners. Leave empty to use the n8n image tag."
+    type: string
+    required: false
+    default: ""
+    group: "Container Images"
+    show_if: "runners.enabled=true"
 
   #  ________________________________________________________
   # |_________________________ Logs ________________________|
