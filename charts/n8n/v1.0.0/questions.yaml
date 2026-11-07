@@ -110,27 +110,83 @@ questions:
     group: "Gateway/Ingress"
     show_subquestion_if: true
     subquestions:
-    - variable: ingress.hostUrl
+    - variable: ingress.exposure
+      label: "Exposure"
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side."
+      type: enum
       required: true
-      description: "Hostname to connect to your app"
+      default: "external"
+      options:
+        - value: external
+          label: "External (public)"
+        - value: internal
+          label: "Internal (cluster only)"
+        - value: both
+          label: "Both (public + internal)"
+    - variable: ingress.hostUrl
+      required: false
+      description: "Public hostname to connect to n8n. Required when the exposure is External or Both."
       type: hostname
-      label: "Hostname"
+      label: "Public Hostname"
+      default: ""
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalHostUrl
+      required: false
+      description: "Internal hostname, resolved only by the internal DNS. Required when the exposure is Internal or Both."
+      type: hostname
+      label: "Internal Hostname"
+      default: ""
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
     - variable: ingress.tlsEnabled
       label: "Enable TLS"
       type: boolean
       required: true
+      default: true
+      show_if: "ingress.exposure=external||ingress.exposure=both"
     - variable: ingress.issuer
       required: false
-      description: "Name of issuer. This will issue a certificate to your website" 
-      type: string
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer or use the YAML editor to name another one."
+      type: enum
       label: "Issuer"
-      show_if: "ingress.tlsEnabled=true"
+      default: "letsencrypt-cert-prod"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+      options:
+        - value: letsencrypt-cert-prod
+          label: "Let's Encrypt (production)"
+        - value: letsencrypt-cert-staging
+          label: "Let's Encrypt (staging)"
+        - value: rancher
+          label: "Self-signed (Rancher CA)"
     - variable: ingress.forceHttps
       label: "Use HTTPS only"
       default: true
       required: true
       type: boolean
       description: "If enabled, all requests to http will be redirected to https"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach the internal hostname. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust."
+      type: string
+      required: false
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+
+  - variable: envVars.n8n.editorBaseUrl
+    label: "Editor URL"
+    description: "Public URL of the n8n editor, e.g. https://n8n.example.com/. Leave empty to use the ingress hostname. n8n sends this URL back to the browser - without it the chat trigger and the webhook widget fail with 'Failed to receive response'."
+    type: string
+    required: false
+    default: ""
+    group: "Gateway/Ingress"
+
+  - variable: envVars.n8n.webhookUrl
+    label: "Webhook URL"
+    description: "Public base URL used to build production webhook URLs, e.g. https://n8n.example.com/. Leave empty to use the ingress hostname."
+    type: string
+    required: false
+    default: ""
+    group: "Gateway/Ingress"
 
   #  ________________________________________________________
   # |_______________________ Storage _______________________|

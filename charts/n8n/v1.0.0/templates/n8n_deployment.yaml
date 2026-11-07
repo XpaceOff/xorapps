@@ -1,4 +1,23 @@
 {{- $fullName := include "n8n.fullname" . -}}
+{{- $nfs := and .Values.storage.nfs.hostname .Values.storage.nfs.path -}}
+{{- $scheme := "http" -}}
+{{- $publicHost := "" -}}
+{{- if .Values.ingress.enabled -}}
+{{- if and (or (eq .Values.ingress.exposure "external") (eq .Values.ingress.exposure "both")) .Values.ingress.hostUrl -}}
+{{- $publicHost = .Values.ingress.hostUrl -}}
+{{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer -}}{{- $scheme = "https" -}}{{- end -}}
+{{- else -}}
+{{- $publicHost = .Values.ingress.internalHostUrl -}}
+{{- end -}}
+{{- end -}}
+{{- $editorBaseUrl := .Values.envVars.n8n.editorBaseUrl -}}
+{{- if and (not $editorBaseUrl) $publicHost -}}
+{{- $editorBaseUrl = printf "%s://%s%s" $scheme $publicHost .Values.ingress.hostPath -}}
+{{- end -}}
+{{- $webhookUrl := .Values.envVars.n8n.webhookUrl -}}
+{{- if and (not $webhookUrl) $publicHost -}}
+{{- $webhookUrl = printf "%s://%s/" $scheme $publicHost -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,6 +42,9 @@ spec:
         {{- end }}
     spec:
 
+      {{- if $nfs }}
+      # Creates the release directories on the NFS share and fixes their
+      # permissions, so the subPath mounts in the main container can start.
       initContainers:
         - name: prepare-nfs-dirs
           image: busybox:1.35.0
@@ -31,7 +53,6 @@ spec:
             - /bin/sh
             - -c
             - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
-          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
           volumeMounts:
             - name: vol-{{ $fullName }}-nfs
               mountPath: /tmp_mount
@@ -41,7 +62,7 @@ spec:
               readOnly: false
             - name: vol-empty-tmp
               mountPath: /scripts-w
-          {{- end }}
+      {{- end }}
 
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -94,10 +115,27 @@ spec:
             - name: N8N_LOG_LEVEL
               value: "{{ .Values.envVars.n8n.logLevel }}"
 
+            # PUBLIC URL
+            # n8n hands these URLs back to the browser (chat trigger, webhook
+            # widget). Without them it falls back to localhost and the chat
+            # widget fails with "Failed to receive response".
+            {{- if $editorBaseUrl }}
+            - name: N8N_EDITOR_BASE_URL
+              value: {{ $editorBaseUrl | quote }}
+            {{- end }}
+            {{- if $webhookUrl }}
+            - name: WEBHOOK_URL
+              value: {{ $webhookUrl | quote }}
+            {{- end }}
+            {{- if $publicHost }}
+            - name: N8N_HOST
+              value: {{ $publicHost | quote }}
+            {{- end }}
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
-          {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+          {{- if $nfs }}
           volumeMounts:
             - mountPath: /home/node/.n8n
               name: vol-{{ $fullName }}-nfs
@@ -107,7 +145,7 @@ spec:
               subPath: {{ $fullName }}/files
           {{- end }}
 
-      {{- if and .Values.storage.nfs.hostname .Values.storage.nfs.path }}
+      {{- if $nfs }}
       volumes:
         - name: vol-{{ $fullName }}-nfs
           nfs:

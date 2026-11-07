@@ -32,23 +32,46 @@ envVars:
     # OTHERS
     logLevel: "info"
 
+    # PUBLIC URL
+    # n8n builds the URLs it hands back to the browser (chat trigger, webhooks)
+    # from these. Without them the editor falls back to localhost and the chat
+    # widget fails with "Failed to receive response".
+    # Empty = derived from the ingress hostname. Override when n8n is reached
+    # through another address than the ingress, or when there is no ingress.
+    editorBaseUrl: ""  # e.g. https://n8n.example.com/
+    webhookUrl: ""     # e.g. https://n8n.example.com/
+
 service:
-  n8n:
-    type: ClusterIP
-    port: 80
+  type: ClusterIP
+  port: 80
 
 ingress:
   enabled: true
   className: ""
-  tlsEnabled: false
+  # Which hostnames to publish:
+  #   external - the public hostname only (certificate + HTTPS redirect)
+  #   internal - the internal hostname only (HTTP, restricted to allowed networks)
+  #   both     - both hostnames, each with its own rules
+  exposure: external
+  # Public hostname (used when exposure is external or both)
+  hostUrl: ""
+  # Internal hostname (used when exposure is internal or both)
+  internalHostUrl: ""
+  tlsEnabled: true
   forceHttps: true
-  issuer: ""
+  issuer: letsencrypt-cert-prod
+  # Networks allowed to reach the internal ingress (comma separated CIDRs).
+  # Enforced by the Traefik ipAllowList middleware: every other source gets
+  # 403, even if it knows the hostname and sends the right Host header.
+  # Default = every private range (RFC 1918), so any internal network works:
+  #   10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+  # Narrow it down to the ranges you trust.
+  internalAllowedCidrs: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
-  hostUrl: "test-n8n.test"
   hostPath: /
-  hostPathType: Prefix 
+  hostPathType: Prefix
 
 storage:
   nfs:

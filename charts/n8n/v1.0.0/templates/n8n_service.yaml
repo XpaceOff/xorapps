@@ -10,7 +10,7 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - name: webui
-      port: {{ .Values.service.n8n.port }}
+      port: {{ .Values.service.port }}
       targetPort: 5678
       protocol: TCP
   selector:

@@ -1,0 +1,26 @@
+{{- if and .Values.ingress.enabled (or (eq .Values.ingress.exposure "internal") (eq .Values.ingress.exposure "both")) .Values.ingress.internalHostUrl .Values.ingress.internalAllowedCidrs -}}
+{{- $fullName := include "n8n.fullname" . -}}
+{{- $cidrs := .Values.ingress.internalAllowedCidrs -}}
+{{- if not (kindIs "slice" $cidrs) -}}
+{{- $cidrs = splitList "," $cidrs -}}
+{{- end -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-tm-ipallowlist
+  labels:
+    {{- include "n8n.labels" . | nindent 4 }}
+spec:
+  ipAllowList:
+    # DNS is not access control: anyone who knows the Traefik IP can send a
+    # request with the right Host header. This rejects anything that does not
+    # come from one of the allowed networks with 403.
+    sourceRange:
+      {{- range $cidr := $cidrs }}
+      - {{ trim $cidr | quote }}
+      {{- end }}
+    ipStrategy:
+      # 0 = the address of the direct peer. X-Forwarded-For is ignored, so it
+      # cannot be used to spoof a source IP.
+      depth: 0
+{{- end }}

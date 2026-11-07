@@ -1,27 +1,29 @@
 #!/bin/sh
 echo "Running init.sh..."
-n8n_dir="/tmp_mount/$1"
+# $1 = release name (isolates each release on the NFS share)
+release_dir="/tmp_mount/$1"
 
-if [ -d "$n8n_dir" ]; then
+# The subPath of a NFS mount must exist on the export before the main
+# container starts, so create the release directories on first install.
+mkdir -p "$release_dir/n8n_data"
+mkdir -p "$release_dir/files"
+
+if [ -d "$release_dir" ]; then
 	echo "Permission before:"
-	ls -l "$n8n_dir/"
+	ls -ld "$release_dir/"
 
 	echo ""
 	echo "Setting the right owner..."
 
-	# NOTE: I don't know if using root:root is safe, but it makes the app work
-	# when data is already written. I would have to check if there is a NFS
-	# setting for me to avoid this.
-	# TODO: Check if this is safe and make changes if necessary.
-	chown -R root:root "$n8n_dir/"
-	chmod 777 "$n8n_dir"
+	# The app writes to these directories as its own user, so make them
+	# accessible to any user of the pod.
+	chown -R root:root "$release_dir/"
+	chmod -R 777 "$release_dir"
 
 	echo ""
 	echo "Permission after:"
-	ls -l "$n8n_dir/"
+	ls -ld "$release_dir/"
 else
-	echo "$n8n_dir doesn't exist."
-	echo "This is probably because this is a new deployment."
+	echo "$release_dir doesn't exist and could not be created."
+	exit 1
 fi
-
-sleep 5s

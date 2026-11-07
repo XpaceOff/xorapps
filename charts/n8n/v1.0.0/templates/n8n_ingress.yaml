@@ -1,6 +1,18 @@
 {{- if and .Values.ingress.enabled -}}
 {{- $fullName := include "n8n.fullname" . -}}
-{{- $svcPort := .Values.service.n8n.port -}}
+{{- $svcPort := .Values.service.port -}}
+{{- $exposure := .Values.ingress.exposure -}}
+{{- $public := or (eq $exposure "external") (eq $exposure "both") -}}
+{{- if $public -}}
+{{- if not .Values.ingress.hostUrl -}}
+{{- fail "ingress.hostUrl is required when ingress.exposure is 'external' or 'both'" -}}
+{{- end -}}
+{{- $tls := and .Values.ingress.tlsEnabled .Values.ingress.issuer -}}
+{{- $forceHttps := and .Values.ingress.forceHttps .Values.ingress.tlsEnabled -}}
+{{- $middlewares := list -}}
+{{- if $forceHttps -}}
+{{- $middlewares = append $middlewares (printf "%s-%s-tm-tohttps@kubernetescrd" .Release.Namespace $fullName) -}}
+{{- end -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
@@ -18,35 +30,35 @@ metadata:
   name: {{ $fullName }}-in
   labels:
     {{- include "n8n.labels" . | nindent 4 }}
-  {{- if or .Values.ingress.annotations .Values.ingress.issuer .Values.ingress.forceHttps }}
+  {{- if or .Values.ingress.annotations $tls $middlewares }}
   annotations:
   {{- if .Values.ingress.issuer }}
     cert-manager.io/issuer: {{ .Values.ingress.issuer }}
   {{- end }}
-  {{- if .Values.ingress.forceHttps }}
-    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-tm-tohttps@kubernetescrd
+  {{- if $middlewares }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ join "," $middlewares }}
   {{- end }}
   {{- range $key, $value := .Values.ingress.annotations }}
   {{- if $value }}
-    {{ $key }}: {{ $value }} 
+    {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}
   {{- end }}
 spec:
-  {{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer }}
+  {{- if $tls }}
   tls:
     - hosts:
-        - {{ index .Values.ingress.hostUrl }}
+        - {{ .Values.ingress.hostUrl | quote }}
       secretName: {{ $fullName }}-n8n-tls
   {{- end }}
   {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.hostUrl }}
+    - host: {{ .Values.ingress.hostUrl | quote }}
       http:
         paths:
-          - path: {{ .Values.ingress.hostPath }} 
+          - path: {{ .Values.ingress.hostPath }}
             pathType: {{ .Values.ingress.hostPathType }}
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
@@ -58,4 +70,5 @@ spec:
               serviceName: {{ $fullName }}-cip
               servicePort: {{ $svcPort }}
               {{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}
