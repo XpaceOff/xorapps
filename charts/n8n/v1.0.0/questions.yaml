@@ -190,10 +190,18 @@ questions:
 
   - variable: envVars.n8n.webhookUrl
     label: "Webhook URL"
-    description: "The base address n8n uses to build the webhook URLs it hands out (WEBHOOK_URL): the Chat Trigger and Webhook node URLs, form triggers and the production URLs you copy into other systems. Must be reachable by whoever calls those webhooks. n8n knows only ONE webhook URL, so with both hostnames published this decides which one your integrations get. Leave empty to use the Public Hostname, or the Internal Hostname when only the internal one is published."
+    description: "The base address n8n uses to build the webhook URLs it hands out (N8N_WEBHOOK_URL): the Chat Trigger and Webhook node URLs, form triggers and the production URLs you copy into other systems. Must be reachable by whoever calls those webhooks. n8n knows only ONE webhook URL, so with both hostnames published this decides which one your integrations get. Leave empty to use the Public Hostname, or the Internal Hostname when only the internal one is published."
     type: string
     required: false
     default: ""
+    group: "Gateway/Ingress"
+
+  - variable: envVars.n8n.proxyHops
+    label: "Proxy Hops"
+    description: "Number of reverse proxies in front of n8n. Keep it at 1 for Traefik: n8n then trusts the X-Forwarded-For header, so the rate limiter sees the real client addresses. 0 makes n8n log an 'X-Forwarded-For header is set but trust proxy is false' error on every request."
+    type: int
+    required: false
+    default: 1
     group: "Gateway/Ingress"
 
   #  ________________________________________________________

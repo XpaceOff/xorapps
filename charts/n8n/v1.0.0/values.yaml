@@ -90,6 +90,10 @@ envVars:
     # through another address than the ingress, or when there is no ingress.
     editorBaseUrl: ""  # e.g. https://n8n.example.com/
     webhookUrl: ""     # e.g. https://n8n.example.com/
+    # Number of reverse proxies in front of n8n (Traefik = 1). Tells Express
+    # to trust the X-Forwarded-For header, so the rate limiter sees the real
+    # client addresses instead of the proxy.
+    proxyHops: 1
 
 service:
   type: ClusterIP

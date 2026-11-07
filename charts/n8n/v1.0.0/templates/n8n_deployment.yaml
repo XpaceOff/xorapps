@@ -166,13 +166,24 @@ spec:
               value: {{ $editorBaseUrl | quote }}
             {{- end }}
             {{- if $webhookUrl }}
-            - name: WEBHOOK_URL
+            # N8N_WEBHOOK_URL replaced WEBHOOK_URL in n8n 2.35.0 (the old name
+            # still works but logs a deprecation warning).
+            - name: N8N_WEBHOOK_URL
               value: {{ $webhookUrl | quote }}
             {{- end }}
             {{- if $publicHost }}
             - name: N8N_HOST
               value: {{ $publicHost | quote }}
+            - name: N8N_PROTOCOL
+              value: {{ $scheme | quote }}
+            - name: N8N_PORT
+              value: {{ ternary "443" "80" (eq $scheme "https") | quote }}
             {{- end }}
+            # Number of reverse proxies in front of n8n. Without this, Express
+            # does not trust the X-Forwarded-For header that Traefik sends and
+            # the rate limiter cannot identify the clients.
+            - name: N8N_PROXY_HOPS
+              value: {{ .Values.envVars.n8n.proxyHops | toString | quote }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

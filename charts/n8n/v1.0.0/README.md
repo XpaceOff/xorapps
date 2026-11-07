@@ -42,9 +42,11 @@ Optional runner settings:
 | `runners.launcherConfig` | Custom launcher config, mounted at `/etc/n8n-task-runners.json` |
 
 By default **no** launcher config is mounted, so the launcher uses the locked
-down config that ships with the image. A custom config must list the task
-runners (`task-runners:`), otherwise the launcher refuses to start with
-`config file ... contains no task runners`.
+down config that ships with the image. A custom config is mounted as a
+directory (`/etc/n8n-task-runners`) and selected with
+`N8N_RUNNERS_CONFIG_PATH`, so the image's own file is never shadowed. It must
+list the task runners (`task-runners:`), otherwise the launcher refuses to
+start with `config file ... contains no task runners`.
 
 ## Ingress exposure
 
@@ -88,18 +90,28 @@ The chart derives them from the ingress hostname:
 | Variable | Derived from |
 |---|---|
 | `N8N_EDITOR_BASE_URL` | `<scheme>://<hostname><hostPath>` |
-| `WEBHOOK_URL` | `<scheme>://<hostname>/` |
+| `N8N_WEBHOOK_URL` | `<scheme>://<hostname>/` |
 | `N8N_HOST` | `<hostname>` (no protocol) |
+| `N8N_PROTOCOL` / `N8N_PORT` | `<scheme>` and `443`/`80` |
+| `N8N_PROXY_HOPS` | `envVars.n8n.proxyHops` (1 = behind Traefik) |
 
 The scheme is `https` when the public hostname has a certificate, otherwise
-`http`. Override them when n8n is reached through another address than the
-ingress (or when there is no ingress at all):
+`http`. Override the first two when n8n is reached through another address
+than the ingress (or when there is no ingress at all):
 
 ```bash
 helm install n8n charts/n8n/v1.0.0 -n <namespace> \
 --set envVars.n8n.editorBaseUrl=https://n8n.example.com/ \
 --set envVars.n8n.webhookUrl=https://n8n.example.com/
 ```
+
+> `N8N_WEBHOOK_URL` replaced `WEBHOOK_URL` in n8n 2.35.0. The old name still
+> works but makes n8n log a deprecation warning on every start.
+
+`N8N_PROXY_HOPS` is what makes Express trust the `X-Forwarded-For` header that
+Traefik sends. Without it n8n logs
+`ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` on every request and the rate limiter
+cannot tell the clients apart.
 
 ## Storage
 
@@ -120,8 +132,10 @@ Besides the database and SMTP settings, the chart sets:
 | Variable | Value |
 |---|---|
 | `N8N_EDITOR_BASE_URL` | `<scheme>://<hostname><hostPath>` — what the browser calls back |
-| `WEBHOOK_URL` | `<scheme>://<hostname>/` — production webhook URLs |
+| `N8N_WEBHOOK_URL` | `<scheme>://<hostname>/` — production webhook URLs |
 | `N8N_HOST` | `<hostname>` (no protocol) |
+| `N8N_PROTOCOL` / `N8N_PORT` | `<scheme>` and `443`/`80` |
+| `N8N_PROXY_HOPS` | `envVars.n8n.proxyHops` — reverse proxies in front of n8n |
 | `TZ` | `envVars.n8n.timezone` |
 | `NODE_FUNCTION_ALLOW_BUILTIN` | `envVars.n8n.nodeFunctionAllowBuiltin` |
 | `NODES_EXCLUDE` | `envVars.n8n.nodesExclude` |

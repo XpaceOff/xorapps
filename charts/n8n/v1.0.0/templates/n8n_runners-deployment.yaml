@@ -13,8 +13,12 @@ spec:
   replicas: {{ .Values.runners.replicaCount }}
   selector:
     matchLabels:
-      {{- include "n8n.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: runners
+      # Must not match the n8n deployment's pods: the Service and the
+      # Deployment of n8n select on name+instance, and a runners pod with
+      # those labels would receive traffic meant for n8n (and show up under
+      # both deployments).
+      app.kubernetes.io/name: {{ include "n8n.name" . }}-runners
+      app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -22,8 +26,15 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "n8n.labels" . | nindent 8 }}
+        helm.sh/chart: {{ include "n8n.chart" . }}
+        app.kubernetes.io/name: {{ include "n8n.name" . }}-runners
+        app.kubernetes.io/part-of: {{ include "n8n.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: runners
+        {{- if .Chart.AppVersion }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        {{- end }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -49,7 +60,8 @@ spec:
               protocol: TCP
 
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /healthz
               port: launcher
             initialDelaySeconds: 10
             periodSeconds: 10
@@ -69,6 +81,12 @@ spec:
             - name: N8N_NATIVE_PYTHON_RUNNER
               value: "true"
             {{- end }}
+            {{- if (include "n8n.runnersLauncherConfig" .) }}
+            # Point the launcher at our config. The image's own
+            # /etc/n8n-task-runners.json is left untouched.
+            - name: N8N_RUNNERS_CONFIG_PATH
+              value: "/etc/n8n-task-runners/n8n-task-runners.json"
+            {{- end }}
 
           resources:
             {{- toYaml .Values.runners.resources | nindent 12 }}
@@ -76,8 +94,7 @@ spec:
           {{- if (include "n8n.runnersLauncherConfig" .) }}
           volumeMounts:
             - name: vol-runners-config
-              mountPath: /etc/n8n-task-runners.json
-              subPath: n8n-task-runners.json
+              mountPath: /etc/n8n-task-runners
               readOnly: true
           {{- end }}
 
