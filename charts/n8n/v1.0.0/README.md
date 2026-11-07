@@ -92,7 +92,6 @@ The chart derives them from the ingress hostname:
 | `N8N_EDITOR_BASE_URL` | `<scheme>://<hostname><hostPath>` |
 | `N8N_WEBHOOK_URL` | `<scheme>://<hostname>/` |
 | `N8N_HOST` | `<hostname>` (no protocol) |
-| `N8N_PROTOCOL` / `N8N_PORT` | `<scheme>` and `443`/`80` |
 | `N8N_PROXY_HOPS` | `envVars.n8n.proxyHops` (1 = behind Traefik) |
 
 The scheme is `https` when the public hostname has a certificate, otherwise
@@ -107,6 +106,11 @@ helm install n8n charts/n8n/v1.0.0 -n <namespace> \
 
 > `N8N_WEBHOOK_URL` replaced `WEBHOOK_URL` in n8n 2.35.0. The old name still
 > works but makes n8n log a deprecation warning on every start.
+
+Do **not** set `N8N_PORT` or `N8N_PROTOCOL`: n8n binds to `N8N_PORT` (5678 by
+default) and the Service targets that port. Setting it to the external port
+(80/443) makes n8n listen on the wrong port and the ingress returns
+`502 Bad Gateway`.
 
 `N8N_PROXY_HOPS` is what makes Express trust the `X-Forwarded-For` header that
 Traefik sends. Without it n8n logs
@@ -134,7 +138,6 @@ Besides the database and SMTP settings, the chart sets:
 | `N8N_EDITOR_BASE_URL` | `<scheme>://<hostname><hostPath>` — what the browser calls back |
 | `N8N_WEBHOOK_URL` | `<scheme>://<hostname>/` — production webhook URLs |
 | `N8N_HOST` | `<hostname>` (no protocol) |
-| `N8N_PROTOCOL` / `N8N_PORT` | `<scheme>` and `443`/`80` |
 | `N8N_PROXY_HOPS` | `envVars.n8n.proxyHops` — reverse proxies in front of n8n |
 | `TZ` | `envVars.n8n.timezone` |
 | `NODE_FUNCTION_ALLOW_BUILTIN` | `envVars.n8n.nodeFunctionAllowBuiltin` |

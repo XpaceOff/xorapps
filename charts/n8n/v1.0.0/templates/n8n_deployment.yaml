@@ -144,8 +144,6 @@ spec:
             # TASK RUNNERS
             # The runners container connects to the broker that runs here.
             {{- if .Values.runners.enabled }}
-            - name: N8N_RUNNERS_ENABLED
-              value: "true"
             - name: N8N_RUNNERS_MODE
               value: "external"
             - name: N8N_RUNNERS_BROKER_LISTEN_ADDRESS
@@ -155,7 +153,18 @@ spec:
                 secretKeyRef:
                   name: {{ $secretName }}
                   key: N8N_RUNNERS_AUTH_TOKEN
+            - name: N8N_RUNNERS_TASK_TIMEOUT
+              value: {{ .Values.envVars.n8n.runnersTaskTimeout | toString | quote }}
             {{- end }}
+
+            # Explicit values for settings whose defaults will change in a
+            # future n8n release (n8n asks for this on startup).
+            - name: N8N_UNVERIFIED_PACKAGES_ENABLED
+              value: {{ .Values.envVars.n8n.unverifiedPackagesEnabled | toString | quote }}
+            - name: N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES
+              value: {{ .Values.envVars.n8n.maxDecompressedSizeBytes | toString | quote }}
+            - name: N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES
+              value: {{ .Values.envVars.n8n.maxZipEntries | toString | quote }}
 
             # PUBLIC URL
             # n8n hands these URLs back to the browser (chat trigger, webhook
@@ -174,11 +183,10 @@ spec:
             {{- if $publicHost }}
             - name: N8N_HOST
               value: {{ $publicHost | quote }}
-            - name: N8N_PROTOCOL
-              value: {{ $scheme | quote }}
-            - name: N8N_PORT
-              value: {{ ternary "443" "80" (eq $scheme "https") | quote }}
             {{- end }}
+            # Do NOT set N8N_PORT or N8N_PROTOCOL here: n8n binds to N8N_PORT
+            # (5678 by default), and the Service targets that port. The public
+            # URL is given with N8N_EDITOR_BASE_URL / N8N_WEBHOOK_URL instead.
             # Number of reverse proxies in front of n8n. Without this, Express
             # does not trust the X-Forwarded-For header that Traefik sends and
             # the rate limiter cannot identify the clients.

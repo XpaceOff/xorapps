@@ -81,6 +81,13 @@ envVars:
     skipAuthOnOauthCallback: false
     # Make the settings file in .n8n readable only by the n8n user.
     enforceSettingsFilePermissions: true
+    # Settings whose defaults change in a future n8n release - n8n asks for
+    # them to be set explicitly on startup. The values below keep today's
+    # behaviour.
+    unverifiedPackagesEnabled: true
+    runnersTaskTimeout: 300
+    maxDecompressedSizeBytes: 2147483648   # 2 GiB
+    maxZipEntries: 5000
 
     # PUBLIC URL
     # n8n builds the URLs it hands back to the browser (chat trigger, webhooks)
