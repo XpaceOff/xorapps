@@ -1,0 +1,180 @@
+questions:
+
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.exposure
+      label: "Exposure"
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: external
+          label: "External (public)"
+        - value: internal
+          label: "Internal (cluster only)"
+        - value: both
+          label: "Both (public + internal)"
+    - variable: ingress.hostUrl
+      required: false
+      description: "Public hostname of Vaultwarden, reachable from the internet (e.g. vaultwarden.example.com). Gets a certificate from cert-manager and redirects to HTTPS."
+      type: hostname
+      label: "Public Hostname"
+      default: ""
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalHostUrl
+      required: false
+      description: "Internal hostname of Vaultwarden, resolved only by the internal DNS (e.g. vaultwarden.cluster). Served over plain HTTP and restricted to the Allowed Networks below, so it cannot be reached from outside your network."
+      type: hostname
+      label: "Internal Hostname"
+      default: ""
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+    - variable: ingress.hostPath
+      label: "Path"
+      description: "Path prefix served by this ingress"
+      type: string
+      default: "/"
+      required: false
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      default: false
+      required: true
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.issuer
+      required: false
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer or use the YAML editor to name another one."
+      type: enum
+      label: "Issuer"
+      default: "letsencrypt-cert-prod"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+      options:
+        - value: letsencrypt-cert-prod
+          label: "Let's Encrypt (production)"
+        - value: letsencrypt-cert-staging
+          label: "Let's Encrypt (staging)"
+        - value: rancher
+          label: "Self-signed (Rancher CA)"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach the internal hostname. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust."
+      type: string
+      required: false
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+
+  #  ________________________________________________________
+  # |______________________ General _________________________|
+  - variable: env.DOMAIN
+    label: "Domain"
+    description: "Public URL of the Vaultwarden instance, e.g. https://vaultwarden.example.com. This is what the clients use to reach it."
+    type: string
+    required: true
+    default: ""
+    group: "User"
+
+  - variable: env.INVITATIONS_ALLOWED
+    label: "Allow Invitations"
+    description: "Allow invited users to join."
+    type: boolean
+    required: false
+    default: true
+    group: "User"
+
+  - variable: env.SIGNUPS_ALLOWED
+    label: "Allow Signups"
+    description: "Allow anyone to create an account."
+    type: boolean
+    required: false
+    default: false
+    group: "User"
+
+  - variable: env.SMTP_HOST
+    label: "SMTP Host"
+    description: "Hostname of the SMTP server used for invitations and password resets."
+    type: string
+    required: false
+    default: ""
+    group: "User"
+
+  - variable: env.SMTP_PORT
+    label: "SMTP Port"
+    type: int
+    required: false
+    default: 25
+    group: "User"
+
+  - variable: env.SMTP_FROM
+    label: "SMTP From"
+    description: "Sender address of the emails sent by Vaultwarden."
+    type: string
+    required: false
+    default: ""
+    group: "User"
+
+  - variable: env.SMTP_SECURITY
+    label: "SMTP Security"
+    description: "Transport security of the SMTP connection: none, starttls or tls."
+    type: enum
+    required: false
+    default: "off"
+    group: "User"
+    options:
+      - "off"
+      - "starttls"
+      - "tls"
+
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: volumes
+    label: "Volumes"
+    description: "List of volumes for the Vaultwarden data. The first volume is mounted at /data (subPath vw-data)."
+    type: yamlfile
+    required: true
+    default: |-
+      - name: vol-vw
+        nfs:
+          server: ""
+          path: ""
+    group: "Storage"
+
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
+  - variable: image.repository
+    label: "Image Repository"
+    type: string
+    required: true
+    default: "vaultwarden/server"
+    group: "Container Images"
+
+  - variable: image.tag
+    label: "Image Tag"
+    type: string
+    required: true
+    default: "1.37.5"
+    group: "Container Images"
+
+  - variable: image.pullPolicy
+    label: "Pull Policy"
+    type: enum
+    required: false
+    default: "IfNotPresent"
+    group: "Container Images"
+    options:
+      - IfNotPresent
+      - Always

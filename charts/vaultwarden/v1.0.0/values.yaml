@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: vaultwarden/server
   pullPolicy: IfNotPresent
-  tag: "1.34.3"
+  tag: "1.37.5"
 
 service:
   type: ClusterIP
@@ -15,13 +15,28 @@ service:
 
 ingress:
   enabled: false
+  className: ""
+  # Which hostnames to publish:
+  #   external - the public hostname only (certificate + HTTPS redirect)
+  #   internal - the internal hostname only (HTTP, restricted to allowed networks)
+  #   both     - both hostnames, each with its own rules
+  exposure: external
+  # Public hostname (used when exposure is external or both)
   hostUrl: ""
+  # Internal hostname (used when exposure is internal or both)
+  internalHostUrl: ""
   hostPath: /
-  hostPathType: Prefix 
-  issuer: ""
+  hostPathType: Prefix
   tlsEnabled: false
   forceHttps: true
-  className: ""
+  issuer: letsencrypt-cert-prod
+  # Networks allowed to reach the internal ingress (comma separated CIDRs).
+  # Enforced by the Traefik ipAllowList middleware: every other source gets
+  # 403, even if it knows the hostname and sends the right Host header.
+  # Default = every private range (RFC 1918), so any internal network works:
+  #   10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+  # Narrow it down to the ranges you trust.
+  internalAllowedCidrs: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
   annotations: {}
 
 # Additional volumes on the output Deployment definition.

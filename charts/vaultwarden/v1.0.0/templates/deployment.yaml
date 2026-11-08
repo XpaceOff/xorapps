@@ -30,12 +30,21 @@ spec:
             {{- end }}
           {{- end }}
           
-          {{- $vols := required "values.volumes must be a non-empty list" .Values.volumes }}
-          {{- $first := required "values.volumes[0] is missing" (index $vols 0) }}
+          {{- $vols := .Values.volumes -}}
+          {{- if $vols }}
+          {{- $first := index $vols 0 }}
           {{- $volName := required "values.volumes[0].name is required" $first.name }}
           volumeMounts:
             - mountPath: /data
               name: {{ $volName }}
               subPath: vw-data
+          {{- end }}
       volumes:
+        {{- if $vols }}
         {{- toYaml $vols | nindent 8 }}
+        {{- else }}
+        # No volume configured: the data stays in the pod and is lost when it
+        # is replaced. Configure volumes[0] to keep it.
+        - name: vol-data
+          emptyDir: {}
+        {{- end }}
