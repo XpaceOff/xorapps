@@ -1,0 +1,15 @@
+{{- $exposure := .Values.ingress.exposure -}}
+{{- $public := or (eq $exposure "external") (eq $exposure "both") -}}
+{{- if and .Values.ingress.enabled .Values.ingress.forceHttps $public -}}
+{{- $fullName := include "openviking.fullname" . -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-tm-tohttps
+  labels:
+    {{- include "openviking.labels" . | nindent 4 }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}

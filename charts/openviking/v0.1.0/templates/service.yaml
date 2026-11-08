@@ -1,0 +1,16 @@
+{{- $fullName := include "openviking.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "openviking.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: 1933
+      protocol: TCP
+  selector:
+    {{- include "openviking.selectorLabels" . | nindent 4 }}

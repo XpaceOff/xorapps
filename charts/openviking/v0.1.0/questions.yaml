@@ -1,0 +1,214 @@
+questions:
+
+  #  ________________________________________________________
+  # |_______________________ Security ______________________|
+  - variable: secretSource
+    label: "Credentials Source"
+    description: "Create the credentials Secret from the fields below, or select an existing Secret in this namespace."
+    type: enum
+    required: true
+    default: "create"
+    group: "Security"
+    options:
+      - value: create
+        label: "Enter values here"
+      - value: existing
+        label: "Use an existing Secret"
+
+  - variable: existingSecret
+    label: "Existing Secret"
+    description: "Secret in this namespace with keys OPENVIKING_ROOT_API_KEY and OPENAI_API_KEY (see README)."
+    type: secret
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=existing"
+
+  - variable: envVars.openviking.rootApiKey
+    label: "Root API Key"
+    description: "Root key for the OpenViking HTTP API. Clients must send it to authenticate."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  - variable: envVars.openviking.openaiApiKey
+    label: "OpenAI API Key"
+    description: "Used by the embedding model and the VLM."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  #  ________________________________________________________
+  # |________________________ Models _______________________|
+  - variable: ovConf.apiBase
+    label: "OpenAI-compatible API Base"
+    description: "Endpoint used for the embedding and VLM calls."
+    type: string
+    required: true
+    default: "https://api.openai.com/v1"
+    group: "Models"
+
+  - variable: ovConf.embedding.model
+    label: "Embedding Model"
+    description: "Embedding model name."
+    type: string
+    required: true
+    default: "text-embedding-3-small"
+    group: "Models"
+
+  - variable: ovConf.embedding.dimension
+    label: "Embedding Dimension"
+    description: "Vector size produced by the embedding model. Changing it for data that is already indexed requires reindexing."
+    type: int
+    required: true
+    default: 1536
+    group: "Models"
+
+  - variable: ovConf.vlm.model
+    label: "VLM Model"
+    description: "Vision language model used for summaries and memory extraction."
+    type: string
+    required: true
+    default: "gpt-5.4"
+    group: "Models"
+
+  #  ________________________________________________________
+  # |_______________________ Database _____________________|
+  - variable: storage.type
+    label: "Storage Type"
+    description: "Storage for the OpenViking workspace (vector DB and file metadata). 'None' uses ephemeral storage and data is lost when the pod is replaced."
+    type: enum
+    required: true
+    default: "None"
+    group: "Database"
+    options:
+      - None
+      - NFS
+
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN or IP of the NFS server."
+    type: string
+    required: true
+    default: ""
+    group: "Database"
+    show_if: "storage.type=NFS"
+
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path of an EXISTING, EXPORTED directory on the NFS server (e.g. /volume1/k8s). Do not add a release subfolder; the chart creates one with subPath."
+    type: string
+    required: true
+    default: ""
+    group: "Database"
+    show_if: "storage.type=NFS"
+
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.exposure
+      label: "Exposure"
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: external
+          label: "External (public)"
+        - value: internal
+          label: "Internal (cluster only)"
+        - value: both
+          label: "Both (public + internal)"
+    - variable: ingress.hostUrl
+      required: false
+      description: "Public hostname to connect to OpenViking. Required when the exposure is External or Both."
+      type: hostname
+      label: "Public Hostname"
+      default: ""
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalHostUrl
+      required: false
+      description: "Internal hostname, resolved only by the internal DNS. Required when the exposure is Internal or Both."
+      type: hostname
+      label: "Internal Hostname"
+      default: ""
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+    - variable: ingress.hostPath
+      label: "Path"
+      description: "Path prefix served by this ingress"
+      type: string
+      default: "/"
+      required: false
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      default: true
+      required: true
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.issuer
+      required: false
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer."
+      type: enum
+      label: "Issuer"
+      default: "letsencrypt-cert-prod"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+      options:
+        - value: letsencrypt-cert-prod
+          label: "Let's Encrypt (production)"
+        - value: letsencrypt-cert-staging
+          label: "Let's Encrypt (staging)"
+        - value: rancher
+          label: "Self-signed (Rancher CA)"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach the internal hostname. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918): 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust."
+      type: string
+      required: false
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
+  - variable: image.repository
+    label: "Image Repository"
+    description: "Docker image repository. Use openviking-cn-beijing.cr.volces.com/volcengine/openviking if ghcr.io is hard to reach."
+    type: string
+    required: true
+    default: "ghcr.io/volcengine/openviking"
+    group: "Container Images"
+
+  - variable: image.tag
+    label: "Image Tag"
+    description: "OpenViking version to deploy"
+    type: string
+    required: true
+    default: "v0.5.3"
+    group: "Container Images"
+
+  - variable: image.pullPolicy
+    label: "Pull Policy"
+    type: enum
+    required: false
+    default: "IfNotPresent"
+    group: "Container Images"
+    options:
+      - IfNotPresent
+      - Always

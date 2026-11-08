@@ -1,0 +1,9 @@
+# Patterns not suited for the default recipe: .git, .DS_Store, etc.
+
+.git
+.gitignore
+*.swp
+.swo
+.DS_Store
+*.bak
+*~

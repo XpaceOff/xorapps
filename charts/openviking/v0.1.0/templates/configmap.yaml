@@ -1,0 +1,40 @@
+{{- $fullName := include "openviking.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-configs
+  labels:
+    {{- include "openviking.labels" . | nindent 4 }}
+data:
+  init.sh: {{ .Files.Get "files/init.sh" | quote }}
+  # Secrets are not stored here: ${...} placeholders are resolved from the
+  # environment (OPENVIKING_ROOT_API_KEY, OPENAI_API_KEY) at server startup.
+  ov.conf: |
+    {
+      "server": {
+        "auth_mode": "api_key",
+        "root_api_key": "${OPENVIKING_ROOT_API_KEY}",
+        "host": "0.0.0.0",
+        "port": 1933
+      },
+      "storage": {
+        "workspace": "./data",
+        "agfs": { "backend": "local" },
+        "vectordb": { "backend": "local" }
+      },
+      "embedding": {
+        "dense": {
+          "provider": "openai",
+          "api_base": {{ .Values.ovConf.apiBase | quote }},
+          "api_key": "${OPENAI_API_KEY}",
+          "model": {{ .Values.ovConf.embedding.model | quote }},
+          "dimension": {{ .Values.ovConf.embedding.dimension | int }}
+        }
+      },
+      "vlm": {
+        "provider": "openai",
+        "api_base": {{ .Values.ovConf.apiBase | quote }},
+        "api_key": "${OPENAI_API_KEY}",
+        "model": {{ .Values.ovConf.vlm.model | quote }}
+      }
+    }

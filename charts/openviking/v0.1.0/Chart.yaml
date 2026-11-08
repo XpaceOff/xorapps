@@ -1,0 +1,9 @@
+apiVersion: v2
+name: openviking
+description: Helm chart for OpenViking - a context database for AI agents with an HTTP API and Web Studio
+
+type: application
+
+version: 0.1.0
+
+appVersion: "v0.5.3"

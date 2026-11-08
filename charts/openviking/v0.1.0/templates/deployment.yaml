@@ -1,0 +1,146 @@
+{{- $fullName := include "openviking.fullname" . -}}
+{{- $nfs := eq .Values.storage.type "NFS" -}}
+{{- $secretName := printf "%s-config" $fullName -}}
+{{- if eq .Values.secretSource "existing" }}{{- if not .Values.existingSecret }}{{ fail "Existing Secret is required when Credentials Source is 'Use an existing Secret'" }}{{- end }}{{- $secretName = .Values.existingSecret -}}{{- end }}
+{{- if and $nfs (or (not .Values.storage.nfs.hostname) (not .Values.storage.nfs.path)) }}{{ fail "storage.nfs.hostname and storage.nfs.path are required when storage.type is NFS" }}{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "openviking.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # The workspace (vector DB and metadata) has a single writer: never run two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "openviking.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/configs: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-config.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "openviking.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- if $nfs }}
+      # Creates the release directory on the NFS share before the server starts.
+      initContainers:
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}' 'data'
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 1933
+              protocol: TCP
+
+          # /health does not touch the database; /ready checks storage and the vector DB.
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+
+          readinessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+            httpGet:
+              path: /ready
+              port: http
+
+          env:
+            # Secrets come from the release Secret, never inline in the Deployment spec
+            - name: OPENVIKING_ROOT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: OPENVIKING_ROOT_API_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: OPENAI_API_KEY
+            - name: OPENVIKING_WITH_BOT
+              value: {{ .Values.envVars.openviking.withBot | quote }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            - name: vol-configs
+              mountPath: /app/.openviking/ov.conf
+              subPath: ov.conf
+              readOnly: true
+            {{- if $nfs }}
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /app/.openviking/data
+              subPath: {{ $fullName }}/data
+            {{- else }}
+            - name: vol-empty-tmp
+              mountPath: /app/.openviking/data
+            {{- end }}
+
+      volumes:
+        {{- if $nfs }}
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+        {{- end }}
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        - name: vol-empty-tmp
+          emptyDir: {}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

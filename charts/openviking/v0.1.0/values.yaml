@@ -1,0 +1,97 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/volcengine/openviking
+  pullPolicy: IfNotPresent
+  tag: "v0.5.3"
+
+# Where the credentials come from:
+#   create   - chart creates the Secret <release>-config from envVars.openviking
+#   existing - chart uses the Secret named in existingSecret and creates none
+secretSource: create
+
+# Name of an existing Secret in this namespace (used when secretSource=existing).
+# Required keys: OPENVIKING_ROOT_API_KEY, OPENAI_API_KEY
+existingSecret: ""
+
+envVars:
+  openviking:
+    # Root key for the HTTP API (auth_mode api_key).
+    rootApiKey: ""
+    # Used by the embedding and VLM providers.
+    openaiApiKey: ""
+    # The image starts vikingbot by default. Keep it off for a server-only deployment.
+    withBot: "0"
+
+# Settings written into ov.conf. Secrets are referenced as ${VAR} placeholders
+# and resolved from the environment, so they never appear in the ConfigMap.
+ovConf:
+  apiBase: "https://api.openai.com/v1"
+  embedding:
+    model: "text-embedding-3-small"
+    # Must match the embedding model's output size.
+    dimension: 1536
+  vlm:
+    model: "gpt-5.4"
+
+service:
+  type: ClusterIP
+  port: 1933
+
+ingress:
+  enabled: false
+  className: ""
+  # Which hostnames to publish:
+  #   external - the public hostname only (certificate + HTTPS redirect)
+  #   internal - the internal hostname only (HTTP, restricted to allowed networks)
+  #   both     - both hostnames, each with its own rules
+  exposure: external
+  # Public hostname (used when exposure is external or both)
+  hostUrl: ""
+  tlsEnabled: true
+  forceHttps: true
+  issuer: letsencrypt-cert-prod
+  # Internal hostname (used when exposure is internal or both)
+  internalHostUrl: ""
+  # Networks allowed to reach the internal ingress (comma separated CIDRs).
+  # Enforced by the Traefik ipAllowList middleware: every other source gets
+  # 403, even if it knows the hostname and sends the right Host header.
+  # Default = every private range (RFC 1918), so any internal network works:
+  #   10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+  # Narrow it down to the ranges you trust.
+  internalAllowedCidrs: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  annotations: {}
+  hostPath: /
+  hostPathType: Prefix
+
+storage:
+  # None: ephemeral storage, data is lost when the pod is replaced. NFS: data kept on an NFS share.
+  type: None
+  nfs:
+    hostname: ""
+    path: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
