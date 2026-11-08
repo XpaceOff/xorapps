@@ -52,7 +52,7 @@ To allow only specific networks on the internal hostname:
 
 ```bash
 helm upgrade hindsight charts/hindsight/v0.1.0 -n <namespace> --reuse-values \
---set ingress.internalAllowedCidrs="10.0.0.0/8,192.168.0.0/16"
+--set-json 'ingress.internalAllowedCidrs=["10.0.0.0/8","192.168.0.0/16"]'
 ```
 
 Without an Ingress at all (`ingress.enabled=false`), the app is only reachable
