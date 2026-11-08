@@ -17,10 +17,11 @@ if [ -d "$data_dir" ]; then
 	echo ""
 	echo "Setting the right owner..."
 
-	# The app writes to this directory as its own (unknown) user, so make it
-	# accessible to any user of the pod.
-	chown -R root:root "$release_dir/"
-	chmod -R 777 "$release_dir"
+	# The image runs as uid 1000 (hindsight). Embedded Postgres refuses to start
+	# when the data directory is owned by another user, so match that owner and
+	# keep the data private to it.
+	chown -R 1000:1000 "$release_dir/"
+	chmod -R u+rwX,go-rwx "$release_dir/"
 
 	echo ""
 	echo "Permission after:"

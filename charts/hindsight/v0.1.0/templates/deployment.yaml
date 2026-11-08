@@ -75,6 +75,16 @@ spec:
               containerPort: 9999
               protocol: TCP
 
+          # Startup loads the embedding and reranker models and starts the embedded
+          # Postgres before the HTTP port answers, which takes minutes on a cold start.
+          # Liveness and readiness are held back until this probe succeeds.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
           # /health/live is in-process only (never touches the database), so a slow
           # or unreachable database does not restart the pod.
           livenessProbe:

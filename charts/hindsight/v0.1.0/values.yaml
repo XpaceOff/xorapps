@@ -4,7 +4,7 @@ image:
   repository: ghcr.io/vectorize-io/hindsight
   pullPolicy: IfNotPresent
   # Upstream releases: https://github.com/vectorize-io/hindsight/releases
-  tag: "1.1.0"
+  tag: "1.2.0"
 
 # Where the credentials come from:
 #   create   - chart creates the Secret <release>-config from llm.apiKey

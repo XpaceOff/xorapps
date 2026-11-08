@@ -106,7 +106,9 @@ data is lost when the pod is replaced.
 `storage.type=NFS` mounts the export at `storage.mountPath`
 (`/home/hindsight/.pg0`) using `subPath: <release>/pg0`, so several releases can
 share one export. An init container creates the release directory on the share
-and fixes its permissions before the main container starts. The NFS path must be
+and sets its owner to uid 1000 (the user the image runs as) before the main
+container starts, because embedded Postgres refuses to start on a data directory
+owned by another user. The NFS path must be
 an **existing, exported** directory (e.g. `/volume1/k8s`).
 
 Because the embedded Postgres data directory is a single-writer store, keep
@@ -173,16 +175,34 @@ helm uninstall hindsight -n <namespace>
 
 ## Manual upgrade
 
-Use `--reuse-values` so unspecified settings are kept:
+Use `--reuse-values` so unspecified settings are kept. Without it, every value
+not passed with `--set` resets to the chart default.
+
+Upgrade to a new chart/app version (e.g. 1.1.0 → 1.2.0) with the settings already
+in the release:
+
+```bash
+helm upgrade hindsight charts/hindsight/v0.1.0 -n <namespace> --reuse-values \
+--set image.tag=1.2.0
+```
+
+Change a single setting while keeping the rest:
 
 ```bash
 helm upgrade hindsight charts/hindsight/v0.1.0 -n <namespace> --reuse-values \
 --set llm.model=gpt-oss-20b
 ```
 
+Check the result:
+
+```bash
+helm -n <namespace> history hindsight
+kubectl -n <namespace> rollout status deploy/hindsight
+```
+
 ## Image tag
 
-The chart is pinned to `image.tag: "1.1.0"` with `image.pullPolicy: IfNotPresent`
+The chart is pinned to `image.tag: "1.2.0"` with `image.pullPolicy: IfNotPresent`
 (the all-in-one image: API + Control Plane + embedded Postgres). Upstream
 releases: <https://github.com/vectorize-io/hindsight/releases>.
 
@@ -198,6 +218,7 @@ helm upgrade hindsight charts/hindsight/v0.1.0 -n <namespace> --reuse-values \
 
 | Probe | Endpoint | Behaviour |
 |---|---|---|
+| startup | `GET /health/live` | Up to ~10 minutes (60 × 10s) for the embedding and reranker models and embedded Postgres to load. Liveness and readiness wait for it |
 | liveness | `GET /health/live` | In-process only, never touches the database |
 | readiness | `GET /health` | Verifies the database is reachable; a pod that fails it is removed from the Service |
 
