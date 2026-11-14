@@ -51,24 +51,43 @@ spec:
               containerPort: 4000
               protocol: TCP
 
+          {{- if (.Values.startupProbe).enabled }}
+          # Prevent liveness checks from restarting LiteLLM during its slow
+          # database migration and application startup sequence.
+          startupProbe:
+            initialDelaySeconds: {{ (.Values.startupProbe).initialDelaySeconds }}
+            periodSeconds: {{ (.Values.startupProbe).periodSeconds }}
+            timeoutSeconds: {{ (.Values.startupProbe).timeoutSeconds }}
+            failureThreshold: {{ (.Values.startupProbe).failureThreshold }}
+            httpGet:
+              path: {{ (.Values.startupProbe).path }}
+              port: http
+          {{- end }}
+
           # /health requires the master key; the liveness/readiness endpoints are unauthenticated
           livenessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            failureThreshold: 3
+            initialDelaySeconds: {{ (.Values.livenessProbe).initialDelaySeconds }}
+            periodSeconds: {{ (.Values.livenessProbe).periodSeconds }}
+            timeoutSeconds: {{ (.Values.livenessProbe).timeoutSeconds }}
+            failureThreshold: {{ (.Values.livenessProbe).failureThreshold }}
             httpGet:
-              path: /health/liveliness
+              path: {{ (.Values.livenessProbe).path }}
               port: http
 
           readinessProbe:
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ (.Values.readinessProbe).initialDelaySeconds }}
+            periodSeconds: {{ (.Values.readinessProbe).periodSeconds }}
+            timeoutSeconds: {{ (.Values.readinessProbe).timeoutSeconds }}
+            failureThreshold: {{ (.Values.readinessProbe).failureThreshold }}
             httpGet:
-              path: /health/readiness
+              path: {{ (.Values.readinessProbe).path }}
               port: http
 
           env:
+            # LiteLLM v1.109.0+ defaults to uvloop on Linux. Use the standard
+            # asyncio event loop to avoid uvloop-specific crash/stall issues.
+            - name: LITELLM_EVENT_LOOP
+              value: {{ (.Values.eventLoop | default "asyncio") | quote }}
             # Secrets come from the release Secret, never inline in the Deployment spec
             - name: LITELLM_MASTER_KEY
               valueFrom:

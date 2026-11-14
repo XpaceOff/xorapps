@@ -121,6 +121,15 @@ in-cluster through the Service:
 
 By default the chart runs one worker process (`numWorkers: 1`). With one worker and one replica, Redis is not needed.
 
+The chart sets `LITELLM_EVENT_LOOP=asyncio` by default. LiteLLM v1.109.0 and newer default to uvloop on Linux; asyncio avoids uvloop-specific crash or stall issues. To use uvloop instead:
+
+```bash
+helm upgrade litellm charts/litellm/v0.1.0 -n <namespace> --reuse-values \
+--set eventLoop=uvloop
+```
+
+The chart also configures a startup probe against `/health/readiness`. This gives LiteLLM up to two minutes to run database migrations and initialize before the liveness probe can restart it. Probe timing can be adjusted with `startupProbe.*`, `livenessProbe.*`, and `readinessProbe.*` in `values.yaml`.
+
 If you run more than one worker (`numWorkers`) or replica (`replicaCount`), enable Redis so rate limits, budgets, and router state are shared. Without it LiteLLM shows a warning and enforces limits per worker.
 
 Use an existing Redis server:

@@ -276,6 +276,27 @@ questions:
     default: 1
     group: "Container Images"
 
+  - variable: eventLoop
+    label: "Event Loop"
+    description: "LiteLLM v1.109.0+ uses uvloop by default. Use asyncio to avoid uvloop-specific crash or stall issues."
+    type: enum
+    required: true
+    default: "asyncio"
+    group: "Container Images"
+    options:
+      - value: asyncio
+        label: "asyncio"
+      - value: uvloop
+        label: "uvloop"
+
+  - variable: startupProbe.enabled
+    label: "Enable Startup Probe"
+    description: "Give LiteLLM time to complete database migrations and start Uvicorn before liveness checks can restart it."
+    type: boolean
+    required: true
+    default: true
+    group: "Container Images"
+
   - variable: redis.enabled
     label: "Use Redis"
     description: "Shared state for rate limits, budgets, and router state. Required when running more than one worker or replica."

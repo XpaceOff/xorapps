@@ -3,6 +3,32 @@ replicaCount: 1
 # Number of LiteLLM worker processes per pod. Keep at 1 unless Redis is enabled.
 numWorkers: 1
 
+# Event loop used by LiteLLM. LiteLLM v1.109.0+ uses uvloop by default.
+# Set to "asyncio" to avoid uvloop crashes/stalls on affected releases.
+eventLoop: asyncio
+
+# Probes. The startup probe gives LiteLLM time to initialize the database and
+# start Uvicorn before liveness checks can restart the container.
+startupProbe:
+  enabled: true
+  path: /health/readiness
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 24
+livenessProbe:
+  path: /health/liveliness
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+readinessProbe:
+  path: /health/readiness
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 3
+
 # Redis for shared state (rate limits, budgets, router state, cache invalidation).
 # Required when replicaCount > 1 or numWorkers > 1.
 #   external - connect to an existing Redis at redis.host:redis.port
