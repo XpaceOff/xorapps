@@ -1,0 +1,73 @@
+{{- if and .Values.redis.enabled (eq .Values.redis.type "internal") }}
+{{- $fullName := include "honcho.fullname" . -}}
+{{- $nfs := eq .Values.redis.internal.storage.type "NFS" -}}
+{{- if and $nfs (not (and .Values.redis.internal.storage.nfs.hostname .Values.redis.internal.storage.nfs.path)) }}
+{{- fail "Redis Storage Type NFS requires the NFS Server's Hostname and Path" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-redis
+  labels:
+    app.kubernetes.io/name: {{ $fullName }}-redis
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: {{ include "honcho.name" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $fullName }}-redis
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $fullName }}-redis
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/part-of: {{ include "honcho.name" . }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: {{ .Values.redis.internal.image | quote }}
+          imagePullPolicy: IfNotPresent
+          # With REDIS_PASSWORD empty, Redis runs without authentication.
+          command: ["/bin/sh", "-c"]
+          args:
+            - if [ -n "$REDIS_PASSWORD" ]; then exec redis-server --requirepass "$REDIS_PASSWORD"; else exec redis-server; fi
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "honcho.secretName" . }}
+                  key: REDIS_PASSWORD
+                  optional: true
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: vol-{{ $fullName }}-redis-data
+              mountPath: {{ .Values.redis.internal.storage.mountPath }}
+              {{- if $nfs }}
+              subPath: {{ $fullName }}/redis
+              {{- end }}
+      volumes:
+        - name: vol-{{ $fullName }}-redis-data
+          {{- if $nfs }}
+          nfs:
+            server: {{ .Values.redis.internal.storage.nfs.hostname }}
+            path: {{ .Values.redis.internal.storage.nfs.path }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

@@ -1,0 +1,21 @@
+{{- if and .Values.redis.enabled (eq .Values.redis.type "internal") }}
+{{- $fullName := include "honcho.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-redis-cip
+  labels:
+    app.kubernetes.io/name: {{ $fullName }}-redis
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: {{ include "honcho.name" . }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ $fullName }}-redis
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

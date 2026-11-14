@@ -1,0 +1,29 @@
+{{- if and .Values.redis.enabled (eq .Values.redis.type "internal") }}
+{{- $fullName := include "honcho.fullname" . -}}
+# Only the Honcho pods in this release may connect to the internal Redis.
+# Without this, every pod in the cluster can reach the cache on port 6379.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullName }}-redis-np
+  labels:
+    app.kubernetes.io/name: {{ $fullName }}-redis
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: {{ include "honcho.name" . }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $fullName }}-redis
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        # The API and the deriver. Both carry app.kubernetes.io/instance=<release>.
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - protocol: TCP
+          port: 6379
+{{- end }}

@@ -1,0 +1,11 @@
+{{- if and .Values.ingress.enabled .Values.ingress.forceHttps (or (eq .Values.ingress.exposure "external") (eq .Values.ingress.exposure "both")) -}}
+{{- $fullName := include "honcho.fullname" . -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-tm-tohttps
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}

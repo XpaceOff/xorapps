@@ -1,0 +1,182 @@
+# Default values for honcho.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/plastic-labs/honcho
+  pullPolicy: IfNotPresent
+  # Upstream tags are prefixed with "v": https://github.com/plastic-labs/honcho/releases
+  tag: "v3.6.1"
+
+# Where the credentials come from:
+#   create   - chart creates the Secret <release>-config from the values below
+#   existing - chart uses the Secret named in existingSecret and creates none
+secretSource: create
+
+# Existing Secret (secretSource=existing). See the README for the full key list.
+existingSecret: ""
+
+envVars:
+  honcho:
+    # --- LLM provider (REQUIRED, the server refuses to boot without one) ---
+    # openai | anthropic | gemini. Set the matching LLM_*_API_KEY below.
+    # With the built-in defaults one key is enough: text generation uses
+    # openai/gpt-5.4-mini and embeddings use openai/text-embedding-3-small.
+    openaiApiKey: ""
+    anthropicApiKey: ""
+    geminiApiKey: ""
+    # Optional base URL of an OpenAI-compatible proxy (LiteLLM, Ollama, vLLM, ...).
+    # Honcho reads the base URL from the per-module override, not from a global
+    # variable, so the module overrides below are what actually route the calls.
+    baseUrl: ""
+
+    # --- Application ---
+    logLevel: "INFO"
+    # Namespace prefix for all vector namespaces. Keep it stable.
+    namespace: "honcho"
+
+    # --- Authentication ---
+    # Honcho refuses to boot with AUTH_USE_AUTH=true and no AUTH_JWT_SECRET.
+    # When enabled, API keys are minted with POST /v3/keys.
+    authEnabled: false
+    jwtSecret: ""
+
+    # --- Cache ---
+    cacheEnabled: false
+    # Set automatically by the chart when the internal Redis is used.
+
+    # --- Vector store ---
+    # pgvector | turbopuffer | lancedb | qdrant | chromadb
+    # The internal Postgres is pgvector, so keep pgvector unless you use an
+    # external vector store and a matching configuration.
+    vectorStoreType: "pgvector"
+
+    # --- Observability ---
+    metricsEnabled: false
+    sentryEnabled: false
+    sentryDsn: ""
+
+# Number of API server processes per pod. Each process opens its own connection
+# pool, so keep API_WORKERS * (DB_POOL_SIZE + DB_MAX_OVERFLOW) below the
+# PostgreSQL max_connections.
+apiWorkers: 1
+
+# Background worker (deriver). It extracts observations from messages, builds
+# peer representations, generates summaries and runs dream consolidation.
+# Without it, messages are stored but no memory is produced.
+deriver:
+  enabled: true
+  replicas: 1
+  # Number of deriver processes per pod.
+  workers: 1
+
+# Run the database migrations before the API and the deriver start.
+# Both pods run "python scripts/provision_db.py", which takes a Postgres
+# advisory lock, so concurrent starts are safe: one migrates, the others
+# wait and then become no-ops.
+migrations:
+  enabled: true
+
+# Authenticate the API with JWTs. When enabled the server requires
+# AUTH_JWT_SECRET and refuses to start without it.
+auth:
+  enabled: false
+
+database:
+  # external: use envVars.honcho.dbConnectionUri
+  # internal: deploy a pgvector Postgres 15 in this release (data on NFS)
+  type: external
+  dbConnectionUri: "" # postgresql+psycopg://user:pass@host:5432/dbname
+  internal:
+    image: pgvector/pgvector:pg15
+    user: honcho
+    password: ""
+    dbName: honcho
+    service:
+      port: 5432
+
+redis:
+  enabled: false
+  # external: connect to an existing Redis. internal: deploy one in this release.
+  type: external
+  host: ""
+  port: 6379
+  password: ""
+  internal:
+    image: redis:8.2
+    # Persistent data on an NFS share. The cache is disposable, so the
+    # default (emptyDir) is fine.
+    storage:
+      type: None
+      nfs:
+        hostname: ""
+        path: ""
+      mountPath: /data
+
+service:
+  type: ClusterIP
+  port: 8000
+
+storage:
+  # None: ephemeral storage for the chart-managed Postgres. NFS: data kept on an NFS share.
+  type: None
+  nfs:
+    hostname: ""
+    path: ""
+  mountPath: /var/lib/postgresql/data
+
+ingress:
+  enabled: false
+  className: ""
+  # Which hostnames to publish:
+  #   external - the public hostname only (certificate + HTTPS redirect)
+  #   internal - the internal hostname only (HTTP, restricted to allowed networks)
+  #   both     - both hostnames, each with its own rules
+  exposure: external
+  # Public hostname (used when exposure is external or both)
+  hostUrl: ""
+  tlsEnabled: true
+  forceHttps: true
+  issuer: letsencrypt-cert-prod
+  # Internal hostname (used when exposure is internal or both)
+  internalHostUrl: ""
+  # Networks allowed to reach the internal ingress (comma separated CIDRs).
+  # Enforced by the Traefik ipAllowList middleware: every other source gets
+  # 403, even if it knows the hostname and sends the right Host header.
+  # Default = every private range (RFC 1918), so any internal network works:
+  #   10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+  # Narrow it down to the ranges you trust.
+  internalAllowedCidrs: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  annotations: {}
+  hostPath: /
+  hostPathType: Prefix
+
+serviceAccount:
+  # This chart does not create a ServiceAccount resource.
+  create: false
+  name: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

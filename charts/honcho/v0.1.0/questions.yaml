@@ -1,0 +1,426 @@
+questions:
+
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.exposure
+      label: "Exposure"
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: external
+          label: "External (public)"
+        - value: internal
+          label: "Internal (cluster only)"
+        - value: both
+          label: "Both (public + internal)"
+    - variable: ingress.hostUrl
+      required: false
+      description: "Public hostname of the Honcho API. Required when the exposure is External or Both."
+      type: hostname
+      label: "Public Hostname"
+      default: ""
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalHostUrl
+      required: false
+      description: "Internal hostname, resolved only by the internal DNS. Required when the exposure is Internal or Both."
+      type: hostname
+      label: "Internal Hostname"
+      default: ""
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+    - variable: ingress.hostPath
+      label: "Path"
+      description: "Path prefix served by this ingress"
+      type: string
+      default: "/"
+      required: false
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      default: true
+      required: true
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.issuer
+      required: false
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer or use the YAML editor to name another one."
+      type: enum
+      label: "Issuer"
+      default: "letsencrypt-cert-prod"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+      options:
+        - value: letsencrypt-cert-prod
+          label: "Let's Encrypt (production)"
+        - value: letsencrypt-cert-staging
+          label: "Let's Encrypt (staging)"
+        - value: rancher
+          label: "Self-signed (Rancher CA)"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach the internal hostname. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust."
+      type: string
+      required: false
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+
+  #  ________________________________________________________
+  # |______________________ Security _______________________|
+  - variable: secretSource
+    label: "Credentials Source"
+    description: "Create the credentials Secret from the fields below, or select an existing Secret in this namespace."
+    type: enum
+    required: true
+    default: "create"
+    group: "Security"
+    options:
+      - value: create
+        label: "Enter values here"
+      - value: existing
+        label: "Use an existing Secret"
+
+  - variable: existingSecret
+    label: "Existing Secret"
+    description: "Secret in this namespace with keys DB_CONNECTION_URI, LLM_OPENAI_API_KEY (see README)."
+    type: secret
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=existing"
+
+  - variable: envVars.honcho.openaiApiKey
+    label: "OpenAI API Key"
+    description: "Required. Honcho uses LLMs for memory extraction, summarization, dialectic chat and dream consolidation, and refuses to start without a provider. With the built-in defaults this single key is enough (text generation: openai/gpt-5.4-mini, embeddings: openai/text-embedding-3-small)."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  - variable: envVars.honcho.anthropicApiKey
+    label: "Anthropic API Key"
+    description: "Optional. Only needed when the Anthropic transport is used."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  - variable: envVars.honcho.geminiApiKey
+    label: "Gemini API Key"
+    description: "Optional. Only needed when the Gemini transport is used."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  - variable: envVars.honcho.baseUrl
+    label: "OpenAI-compatible Base URL"
+    description: "Optional. Base URL of an OpenAI-compatible endpoint (LiteLLM, Ollama, vLLM, OpenRouter). Note that Honcho reads the base URL from the per-module override, so this global variable alone may not route every feature."
+    type: string
+    required: false
+    default: ""
+    group: "Security"
+
+  - variable: auth.enabled
+    label: "Enable Authentication"
+    description: "Turn on JWT authentication. The server then refuses to start without a JWT secret, and API keys are minted with POST /v3/keys. Leave off for a private, internal-only instance."
+    type: boolean
+    required: true
+    default: false
+    group: "Security"
+
+  - variable: envVars.honcho.jwtSecret
+    label: "JWT Secret"
+    description: "Random hex string used to sign the API keys. Generate one with: openssl rand -hex 32. Keep it: changing it invalidates every issued key."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "auth.enabled=true"
+
+  #  ________________________________________________________
+  # |______________________ Database ________________________|
+  - variable: database.type
+    label: "Database"
+    description: "'Use an existing Postgres (URL)': the connection string comes from the Database URL field, or from DB_CONNECTION_URI in the existing Secret. 'Deploy my own Postgres': a PostgreSQL 15 with pgvector is created in this release; its password comes from the Postgres Password field or POSTGRES_PASSWORD in the existing Secret."
+    type: enum
+    required: true
+    default: "external"
+    group: "Database"
+    options:
+      - value: internal
+        label: "Deploy my own Postgres"
+      - value: external
+        label: "Use an existing Postgres (URL)"
+
+  - variable: envVars.honcho.dbConnectionUri
+    label: "Database URL"
+    description: "PostgreSQL connection string, e.g. postgresql+psycopg://honcho:password@db:5432/honcho. The prefix must be postgresql+psycopg. The database needs the pgvector extension."
+    type: string
+    required: false
+    default: ""
+    group: "Database"
+    show_if: "database.type=external&&secretSource=create"
+
+  - variable: database.internal.user
+    label: "Postgres User"
+    type: string
+    required: true
+    default: "honcho"
+    group: "Database"
+    show_if: "database.type=internal"
+
+  - variable: database.internal.password
+    label: "Postgres Password"
+    description: "Password for the chart-managed Postgres."
+    type: password
+    required: false
+    default: ""
+    group: "Database"
+    show_if: "database.type=internal&&secretSource=create"
+
+  - variable: database.internal.dbName
+    label: "Postgres Database Name"
+    type: string
+    required: true
+    default: "honcho"
+    group: "Database"
+    show_if: "database.type=internal"
+
+  - variable: database.internal.image
+    label: "Postgres Image"
+    description: "Must include the pgvector extension. Honcho stores its vectors in pgvector by default."
+    type: string
+    required: false
+    default: "pgvector/pgvector:pg15"
+    group: "Database"
+    show_if: "database.type=internal"
+
+  - variable: storage.type
+    label: "Storage Type"
+    description: "Storage for the chart-managed Postgres data. 'None' uses ephemeral storage and data is lost when the pod is replaced."
+    type: enum
+    required: true
+    default: "None"
+    group: "Database"
+    show_if: "database.type=internal"
+    options:
+      - None
+      - NFS
+
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN or IP of the NFS server."
+    type: string
+    required: true
+    default: ""
+    group: "Database"
+    show_if: "database.type=internal&&storage.type=NFS"
+
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path of an EXISTING, EXPORTED directory on the NFS server (e.g. /volume1/k8s). Do not add a release subfolder; the chart creates one with subPath."
+    type: string
+    required: true
+    default: ""
+    group: "Database"
+    show_if: "database.type=internal&&storage.type=NFS"
+
+  - variable: storage.mountPath
+    label: "Container Path"
+    description: "Where the storage is mounted in the Postgres container."
+    type: string
+    required: true
+    default: "/var/lib/postgresql/data"
+    group: "Database"
+    show_if: "database.type=internal&&storage.type=NFS"
+
+  #  ________________________________________________________
+  # |________________________ Redis _________________________|
+  - variable: redis.enabled
+    label: "Use Redis"
+    description: "Redis cache. Optional - Honcho works without it, but the cache saves a lot of database work."
+    type: boolean
+    required: false
+    default: false
+    group: "Redis"
+    show_subquestion_if: true
+    subquestions:
+    - variable: redis.type
+      label: "Redis"
+      description: "'Use an existing Redis': connect to a Redis server you run. 'Deploy my own Redis': a Redis is created in this release (no persistence by default), reachable only by Honcho."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: internal
+          label: "Deploy my own Redis"
+        - value: external
+          label: "Use an existing Redis"
+    - variable: redis.host
+      label: "Redis Host"
+      description: "Hostname or IP of the existing Redis server"
+      type: string
+      required: false
+      default: ""
+      show_if: "redis.type=external"
+    - variable: redis.port
+      label: "Redis Port"
+      type: int
+      required: false
+      default: 6379
+      show_if: "redis.type=external"
+    - variable: redis.password
+      label: "Redis Password"
+      description: "Leave empty for no password. Ignored when using an existing Secret (put REDIS_PASSWORD in the Secret instead)."
+      type: password
+      required: false
+      default: ""
+      show_if: "secretSource=create"
+
+  #  ________________________________________________________
+  # |_____________________ Application ______________________|
+  - variable: envVars.honcho.logLevel
+    label: "Log Level"
+    description: "Python log level: DEBUG, INFO, WARNING, ERROR."
+    type: enum
+    required: true
+    default: "INFO"
+    group: "Application"
+    options:
+      - DEBUG
+      - INFO
+      - WARNING
+      - ERROR
+
+  - variable: envVars.honcho.namespace
+    label: "Vector Namespace"
+    description: "Prefix for all vector namespaces. Keep it stable: changing it orphans the existing vectors."
+    type: string
+    required: true
+    default: "honcho"
+    group: "Application"
+
+  - variable: envVars.honcho.vectorStoreType
+    label: "Vector Store"
+    description: "Where the embeddings are stored. 'pgvector' uses the PostgreSQL database and is the default. The other options need an additional external service."
+    type: enum
+    required: true
+    default: "pgvector"
+    group: "Application"
+    options:
+      - pgvector
+      - turbopuffer
+      - lancedb
+      - qdrant
+      - chromadb
+
+  - variable: apiWorkers
+    label: "API Workers"
+    description: "API server processes per pod. Each process opens its own database connection pool, so keep API workers * (pool size + overflow) below the PostgreSQL max_connections."
+    type: int
+    required: true
+    default: 1
+    group: "Application"
+
+  - variable: deriver.enabled
+    label: "Enable Deriver"
+    description: "Background worker that extracts observations from messages, builds peer representations, generates summaries and runs dream consolidation. Without it, messages are stored but no memory is produced."
+    type: boolean
+    required: true
+    default: true
+    group: "Application"
+
+  - variable: deriver.replicas
+    label: "Deriver Replicas"
+    description: "Number of deriver pods. They coordinate through the database queue, so they can be scaled out."
+    type: int
+    required: true
+    default: 1
+    group: "Application"
+    show_if: "deriver.enabled=true"
+
+  - variable: deriver.workers
+    label: "Deriver Workers"
+    description: "Deriver processes per pod."
+    type: int
+    required: true
+    default: 1
+    group: "Application"
+    show_if: "deriver.enabled=true"
+
+  - variable: migrations.enabled
+    label: "Run Database Migrations"
+    description: "Run 'python scripts/provision_db.py' in an init container before the API and the deriver start. The script takes a Postgres advisory lock, so the two pods can start at the same time without racing. Turn off only if you run the migrations yourself."
+    type: boolean
+    required: true
+    default: true
+    group: "Application"
+
+  - variable: envVars.honcho.metricsEnabled
+    label: "Enable Metrics"
+    description: "Expose Prometheus metrics on /metrics of the API port."
+    type: boolean
+    required: false
+    default: false
+    group: "Application"
+
+  - variable: envVars.honcho.sentryEnabled
+    label: "Enable Sentry"
+    description: "Send error reports to Sentry."
+    type: boolean
+    required: false
+    default: false
+    group: "Application"
+
+  - variable: envVars.honcho.sentryDsn
+    label: "Sentry DSN"
+    type: string
+    required: false
+    default: ""
+    group: "Application"
+    show_if: "envVars.honcho.sentryEnabled=true"
+
+  #  ________________________________________________________
+  # |_____________________ Container Images __________________|
+  - variable: image.repository
+    label: "Image Repository"
+    description: "Docker image repository"
+    type: string
+    required: true
+    default: "ghcr.io/plastic-labs/honcho"
+    group: "Container Images"
+
+  - variable: image.tag
+    label: "Image Tag"
+    description: "Honcho version to deploy. Upstream tags carry a 'v' prefix."
+    type: string
+    required: true
+    default: "v3.6.1"
+    group: "Container Images"
+
+  - variable: image.pullPolicy
+    label: "Pull Policy"
+    type: enum
+    required: false
+    default: "IfNotPresent"
+    group: "Container Images"
+    options:
+      - IfNotPresent
+      - Always
