@@ -1,0 +1,206 @@
+questions:
+
+  #  ________________________________________________________
+  # |______________________ Security ________________________|
+  - variable: registry.source
+    label: "Registry Credentials Source"
+    description: "The images live in a private GitHub Container Registry repository. Either enter a GitHub token below, or select an existing image pull Secret."
+    type: enum
+    required: true
+    default: "create"
+    group: "Security"
+    options:
+      - value: create
+        label: "Enter values here"
+      - value: existing
+        label: "Use an existing Secret"
+
+  - variable: registry.username
+    label: "GitHub Username"
+    description: "The GitHub account that owns the personal access token (the owner of the xoffio organization, or your own user)."
+    type: string
+    required: false
+    default: "xoffio"
+    group: "Security"
+    show_if: "registry.source=create"
+
+  - variable: registry.token
+    label: "GitHub Token"
+    description: "A GitHub personal access token (classic) with the read:packages scope. It is used by the nodes to pull the images from ghcr.io. It is stored in the release Secret and therefore ends up in the Helm release history."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "registry.source=create"
+
+  - variable: registry.existingSecret
+    label: "Existing Image Pull Secret"
+    description: "A docker-registry Secret in this namespace that holds the credentials for ghcr.io. Create it with: kubectl -n <namespace> create secret docker-registry regcred --docker-server=ghcr.io --docker-username=<user> --docker-password=<token>"
+    type: secret
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "registry.source=existing"
+
+  #  ________________________________________________________
+  # |________________________ User __________________________|
+  - variable: config.timezone
+    label: "Timezone"
+    description: "Timezone of the containers, e.g. Europe/Madrid."
+    type: string
+    required: false
+    default: "UTC"
+    group: "User"
+
+  - variable: config.toml
+    label: "Configuration File (TOML)"
+    description: "The content of config.docker.toml, mounted read-only at /app/config.docker.toml in both containers. Leave empty to let the chart generate it with the in-cluster job API address. Use this for the settings the app expects (server, database, paths)."
+    type: multiline
+    required: false
+    default: ""
+    group: "User"
+
+  - variable: config.jobsApiUrl
+    label: "Job API URL"
+    description: "The address of the job API that the web frontend proxies to. Leave empty to use the in-cluster Service of this release."
+    type: string
+    required: false
+    default: ""
+    group: "User"
+
+  #  ________________________________________________________
+  # |_____________________ Container Images _________________|
+  - variable: image.web.repository
+    label: "Web Image Repository"
+    description: "Docker image repository for the web frontend."
+    type: string
+    required: false
+    default: "ghcr.io/xoffio/gooper-web"
+    group: "Container Images"
+
+  - variable: image.web.tag
+    label: "Web Image Tag"
+    description: "Docker image tag for the web frontend."
+    type: string
+    required: false
+    default: "v0.1.0"
+    group: "Container Images"
+
+  - variable: image.jobs.repository
+    label: "Jobs Image Repository"
+    description: "Docker image repository for the job queue."
+    type: string
+    required: false
+    default: "ghcr.io/xoffio/gooper-jobs"
+    group: "Container Images"
+
+  - variable: image.jobs.tag
+    label: "Jobs Image Tag"
+    description: "Docker image tag for the job queue."
+    type: string
+    required: false
+    default: "v0.1.0"
+    group: "Container Images"
+
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: storage.type
+    label: "Storage Type"
+    description: "'None' uses ephemeral storage: the job database, the downloads and the page cache are lost when the pod is replaced. 'NFS' keeps everything on an NFS share."
+    type: enum
+    required: true
+    default: "None"
+    group: "Storage"
+    options:
+      - None
+      - NFS
+
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN or IP of the NFS server."
+    type: string
+    required: false
+    default: ""
+    group: "Storage"
+    show_if: "storage.type=NFS"
+
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path of an EXISTING, EXPORTED directory on the NFS server (e.g. /volume1/k8s). Do not add a release subfolder; the chart creates one with subPath."
+    type: string
+    required: false
+    default: ""
+    group: "Storage"
+    show_if: "storage.type=NFS"
+
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.exposure
+      label: "Exposure"
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: external
+          label: "External (public)"
+        - value: internal
+          label: "Internal (cluster only)"
+        - value: both
+          label: "Both (public + internal)"
+    - variable: ingress.hostUrl
+      required: false
+      description: "Public hostname of the app, reachable from the internet (e.g. goojara.example.com). Gets a certificate from cert-manager and redirects to HTTPS."
+      type: hostname
+      label: "Public Hostname"
+      default: ""
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalHostUrl
+      required: false
+      description: "Internal hostname of the app, resolved only by the internal DNS (e.g. goojara.cluster). Served over plain HTTP and restricted to the Allowed Networks below, so it is not reachable from outside your network."
+      type: hostname
+      label: "Internal Hostname"
+      default: ""
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      required: true
+      default: true
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.issuer
+      required: false
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer or use the YAML editor to name another one."
+      type: enum
+      label: "Issuer"
+      default: "letsencrypt-cert-prod"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+      options:
+        - value: letsencrypt-cert-prod
+          label: "Let's Encrypt (production)"
+        - value: letsencrypt-cert-staging
+          label: "Let's Encrypt (staging)"
+        - value: rancher
+          label: "Self-signed (Rancher CA)"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach the internal hostname. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust."
+      type: string
+      required: false
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal||ingress.exposure=both"

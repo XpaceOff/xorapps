@@ -1,0 +1,143 @@
+# Default values for goojara.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  web:
+    repository: ghcr.io/xoffio/gooper-web
+    pullPolicy: IfNotPresent
+    tag: "v0.1.0"
+  jobs:
+    repository: ghcr.io/xoffio/gooper-jobs
+    pullPolicy: IfNotPresent
+    tag: "v0.1.0"
+
+# The images live in a private GitHub Container Registry repository, so the
+# nodes need a GitHub token to pull them.
+#
+#   create   - the chart creates the Secret <fullname>-registry from
+#              registry.username / registry.token
+#   existing - the chart uses the Secret named in registry.existingSecret,
+#              which must already be a docker-registry Secret
+#
+# The token is a GitHub personal access token (classic) with the read:packages
+# scope. See the README.
+registry:
+  source: create
+  username: xoffio
+  token: ""
+  existingSecret: ""
+
+# The application configuration, mounted read-only at /app/config.docker.toml
+# in both containers.
+config:
+  # The full TOML document. Use this when the app settings do not fit the
+  # structured fields below.
+  toml: ""
+  # The job API the web frontend proxies to. Leave empty to use the in-cluster
+  # Service of this release (http://<release>-goojara-jobs-cip:8081).
+  jobsApiUrl: ""
+  # Timezone of the containers.
+  timezone: UTC
+
+envVars:
+  web:
+    logLevel: "info"
+  jobs:
+    logLevel: "info"
+
+service:
+  type: ClusterIP
+  # The port the web frontend listens on (the compose file maps 8080).
+  port: 80
+  webContainerPort: 8080
+  # The port of the job API (the compose file maps 8081). Only the web server
+  # talks to it, so it is published on the ClusterIP Service only - it is not
+  # reachable from outside the cluster and the ingress never routes it.
+  jobsPort: 8081
+  jobsContainerPort: 8081
+
+ingress:
+  enabled: false
+  className: ""
+  # Which hostnames to publish:
+  #   external - the public hostname only (certificate + HTTPS redirect)
+  #   internal - the internal hostname only (HTTP, restricted to allowed networks)
+  #   both     - both hostnames, each with its own rules
+  exposure: external
+  # Public hostname (used when exposure is external or both)
+  hostUrl: ""
+  # Internal hostname (used when exposure is internal or both)
+  internalHostUrl: ""
+  tlsEnabled: true
+  forceHttps: true
+  issuer: letsencrypt-cert-prod
+  # Networks allowed to reach the internal ingress (comma separated CIDRs).
+  # Enforced by the Traefik ipAllowList middleware: every other source gets
+  # 403, even if it knows the hostname and sends the right Host header.
+  # Default = every private range (RFC 1918), so any internal network works:
+  #   10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+  # Narrow it down to the ranges you trust.
+  internalAllowedCidrs: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  annotations: {}
+  hostPath: /
+  hostPathType: Prefix
+
+storage:
+  # None: ephemeral storage (the databases and the downloads are lost when the
+  #       pod is replaced). NFS: everything is kept on an NFS share.
+  type: None
+  nfs:
+    hostname: ""
+    path: ""
+  # Where the shared goojara page cache is mounted inside the containers.
+  cacheMountPath: /data/cache
+  # Where the poster image cache is mounted inside the web container.
+  imagesMountPath: /data/images
+  # Where the downloads are mounted inside the jobs container.
+  downloadsMountPath: /data/downloads
+  # Where the job database and the per-job logs are mounted inside the jobs container.
+  stateMountPath: /data/state
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

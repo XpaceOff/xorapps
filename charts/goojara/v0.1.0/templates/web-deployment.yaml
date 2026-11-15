@@ -1,0 +1,157 @@
+{{- $fullName := include "goojara.fullname" . -}}
+{{- $nfs := eq .Values.storage.type "NFS" -}}
+{{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
+{{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
+{{- end }}
+{{- $pullSecret := "" -}}
+{{- if eq .Values.registry.source "existing" -}}
+{{- $pullSecret = .Values.registry.existingSecret -}}
+{{- if not $pullSecret -}}
+{{- fail "registry.existingSecret is required when registry.source is 'existing'" -}}
+{{- end -}}
+{{- else -}}
+{{- $pullSecret = printf "%s-registry" $fullName -}}
+{{- end -}}
+{{- $scheme := "http" -}}
+{{- $publicHost := "" -}}
+{{- if .Values.ingress.enabled -}}
+{{- if and (or (eq .Values.ingress.exposure "external") (eq .Values.ingress.exposure "both")) .Values.ingress.hostUrl -}}
+{{- $publicHost = .Values.ingress.hostUrl -}}
+{{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer -}}{{- $scheme = "https" -}}{{- end -}}
+{{- else -}}
+{{- $publicHost = .Values.ingress.internalHostUrl -}}
+{{- end -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "goojara.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "goojara.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "goojara.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+
+      {{- if $nfs }}
+      # Creates the release directories on the NFS share and fixes their
+      # permissions, so the subPath mounts in the main container can start.
+      initContainers:
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
+      {{- end }}
+
+      imagePullSecrets:
+        - name: {{ $pullSecret }}
+      {{- with .Values.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: web
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.web.repository }}:{{ .Values.image.web.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.web.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.webContainerPort }}
+              protocol: TCP
+
+          env:
+            - name: TZ
+              value: {{ .Values.config.timezone | quote }}
+            - name: GOOJARA_CACHE_DB
+              value: {{ printf "%s/goojara_cache.db" .Values.storage.cacheMountPath | quote }}
+            {{- if $publicHost }}
+            # The address the browser uses to reach the app.
+            - name: GOOJARA_PUBLIC_URL
+              value: {{ printf "%s://%s%s" $scheme $publicHost .Values.ingress.hostPath | quote }}
+            {{- end }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            # The config the containers run with. Mounted read-only so it can be
+            # edited without rebuilding the image.
+            - name: vol-configs
+              mountPath: /app/config.docker.toml
+              subPath: config.docker.toml
+              readOnly: true
+            {{- if $nfs }}
+            # The poster image cache.
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: {{ .Values.storage.imagesMountPath }}
+              subPath: {{ $fullName }}/images
+            # The goojara page cache, shared with the jobs container.
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: {{ .Values.storage.cacheMountPath }}
+              subPath: {{ $fullName }}/cache
+            {{- else }}
+            - name: vol-{{ $fullName }}-images
+              mountPath: {{ .Values.storage.imagesMountPath }}
+            - name: vol-{{ $fullName }}-cache
+              mountPath: {{ .Values.storage.cacheMountPath }}
+            {{- end }}
+
+      volumes:
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        {{- if $nfs }}
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+        - name: vol-empty-tmp
+          emptyDir: {}
+        {{- else }}
+        - name: vol-{{ $fullName }}-images
+          emptyDir: {}
+        - name: vol-{{ $fullName }}-cache
+          emptyDir: {}
+        {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

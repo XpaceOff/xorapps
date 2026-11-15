@@ -1,0 +1,163 @@
+{{- $fullName := include "goojara.fullname" . -}}
+{{- $nfs := eq .Values.storage.type "NFS" -}}
+{{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
+{{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
+{{- end }}
+{{- $pullSecret := "" -}}
+{{- if eq .Values.registry.source "existing" -}}
+{{- $pullSecret = .Values.registry.existingSecret -}}
+{{- if not $pullSecret -}}
+{{- fail "registry.existingSecret is required when registry.source is 'existing'" -}}
+{{- end -}}
+{{- else -}}
+{{- $pullSecret = printf "%s-registry" $fullName -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-jobs
+  labels:
+    {{- include "goojara.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jobs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      # Must not match the web deployment's pods: the Service and the Deployment
+      # of web select on name+instance, and a jobs pod with those labels would
+      # receive traffic meant for web (and show up under both deployments).
+      app.kubernetes.io/name: {{ include "goojara.name" . }}-jobs
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        helm.sh/chart: {{ include "goojara.chart" . }}
+        app.kubernetes.io/name: {{ include "goojara.name" . }}-jobs
+        app.kubernetes.io/part-of: {{ include "goojara.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: jobs
+        {{- if .Chart.AppVersion }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        {{- end }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+
+      {{- if $nfs }}
+      # Creates the release directories on the NFS share and fixes their
+      # permissions, so the subPath mounts in the main container can start.
+      initContainers:
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
+      {{- end }}
+
+      imagePullSecrets:
+        - name: {{ $pullSecret }}
+      {{- with .Values.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: jobs
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.jobs.repository }}:{{ .Values.image.jobs.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.jobs.pullPolicy }}
+
+          ports:
+            - name: api
+              containerPort: {{ .Values.service.jobsContainerPort }}
+              protocol: TCP
+
+          env:
+            - name: TZ
+              value: {{ .Values.config.timezone | quote }}
+            - name: GOOJARA_CACHE_DB
+              value: {{ printf "%s/goojara_cache.db" .Values.storage.cacheMountPath | quote }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            # The config the containers run with. Mounted read-only so it can be
+            # edited without rebuilding the image.
+            - name: vol-configs
+              mountPath: /app/config.docker.toml
+              subPath: config.docker.toml
+              readOnly: true
+            {{- if $nfs }}
+            # The downloaded videos.
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: {{ .Values.storage.downloadsMountPath }}
+              subPath: {{ $fullName }}/downloads
+            # The job database and the per-job logs.
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: {{ .Values.storage.stateMountPath }}
+              subPath: {{ $fullName }}/state
+            # The goojara page cache, shared with the web container.
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: {{ .Values.storage.cacheMountPath }}
+              subPath: {{ $fullName }}/cache
+            {{- else }}
+            - name: vol-{{ $fullName }}-downloads
+              mountPath: {{ .Values.storage.downloadsMountPath }}
+            - name: vol-{{ $fullName }}-state
+              mountPath: {{ .Values.storage.stateMountPath }}
+            - name: vol-{{ $fullName }}-cache
+              mountPath: {{ .Values.storage.cacheMountPath }}
+            {{- end }}
+
+      volumes:
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        {{- if $nfs }}
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+        - name: vol-empty-tmp
+          emptyDir: {}
+        {{- else }}
+        - name: vol-{{ $fullName }}-downloads
+          emptyDir: {}
+        - name: vol-{{ $fullName }}-state
+          emptyDir: {}
+        - name: vol-{{ $fullName }}-cache
+          emptyDir: {}
+        {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

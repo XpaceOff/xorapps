@@ -1,0 +1,17 @@
+{{- $fullName := include "goojara.fullname" . -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-cip
+  labels:
+    {{- include "goojara.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.webContainerPort }}
+      protocol: TCP
+  selector:
+    {{- include "goojara.selectorLabels" . | nindent 4 }}
