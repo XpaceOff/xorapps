@@ -105,7 +105,7 @@ questions:
     description: "Docker image repository for the job queue."
     type: string
     required: false
-    default: "ghcr.io/xoffio/gooper-job"
+    default: "ghcr.io/xoffio/gooper-jobs"
     group: "Container Images"
 
   - variable: image.jobs.tag

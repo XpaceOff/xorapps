@@ -12,16 +12,6 @@
 {{- else -}}
 {{- $pullSecret = printf "%s-registry" $fullName -}}
 {{- end -}}
-{{- $scheme := "http" -}}
-{{- $publicHost := "" -}}
-{{- if .Values.ingress.enabled -}}
-{{- if and (or (eq .Values.ingress.exposure "external") (eq .Values.ingress.exposure "both")) .Values.ingress.hostUrl -}}
-{{- $publicHost = .Values.ingress.hostUrl -}}
-{{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer -}}{{- $scheme = "https" -}}{{- end -}}
-{{- else -}}
-{{- $publicHost = .Values.ingress.internalHostUrl -}}
-{{- end -}}
-{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -93,11 +83,6 @@ spec:
               value: {{ .Values.config.timezone | quote }}
             - name: GOOJARA_CACHE_DB
               value: {{ printf "%s/goojara_cache.db" .Values.storage.cacheMountPath | quote }}
-            {{- if $publicHost }}
-            # The address the browser uses to reach the app.
-            - name: GOOJARA_PUBLIC_URL
-              value: {{ printf "%s://%s%s" $scheme $publicHost .Values.ingress.hostPath | quote }}
-            {{- end }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
