@@ -47,6 +47,10 @@ redis:
 # Create a regular admin account in the UI first, then set this to true.
 disableEnvCredentialLogin: false
 
+# LiteLLM general settings applied under the config.yaml general_settings section.
+generalSettings:
+  forwardClientHeadersToLlmApi: true
+
 # Where the credentials come from:
 #   create   - chart creates the Secret <release>-config from envVars / database.internal.password
 #   existing - chart uses the Secret named in existingSecret and creates none

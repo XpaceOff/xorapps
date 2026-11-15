@@ -76,6 +76,22 @@ helm install litellm charts/litellm/v0.1.0 -n <namespace> \
 --set envVars.litellm.saltKey=...
 ```
 
+## LiteLLM general settings
+
+The chart renders a `general_settings` section in LiteLLM's `config.yaml`. By default, client headers are forwarded to LLM APIs:
+
+```yaml
+general_settings:
+  forward_client_headers_to_llm_api: true
+```
+
+Change this with:
+
+```bash
+helm upgrade litellm charts/litellm/v0.1.0 -n <namespace> --reuse-values \
+--set generalSettings.forwardClientHeadersToLlmApi=false
+```
+
 ## Ingress exposure
 
 `ingress.exposure` decides which hostnames are published:

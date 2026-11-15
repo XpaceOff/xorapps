@@ -163,6 +163,16 @@ questions:
     group: "Security"
 
   #  ________________________________________________________
+  # |________________ LiteLLM General Settings ______________|
+  - variable: generalSettings.forwardClientHeadersToLlmApi
+    label: "Forward client headers to LLM API"
+    description: "Sets general_settings.forward_client_headers_to_llm_api in the LiteLLM configuration."
+    type: boolean
+    required: true
+    default: true
+    group: "LiteLLM General Settings"
+
+  #  ________________________________________________________
   # |_______________________ Database ______________________|
   - variable: database.type
     label: "Database"

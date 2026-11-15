@@ -8,7 +8,10 @@ metadata:
 data:
   config.yaml: |
     {{- .Files.Get "files/config.yaml" | required "files/config.yaml missing" | nindent 4 }}
-    {{- if .Values.disableEnvCredentialLogin }}
     general_settings:
+      {{- if .Values.disableEnvCredentialLogin }}
       disable_env_credential_login: true
-    {{- end }}
+      {{- end }}
+      {{- if .Values.generalSettings.forwardClientHeadersToLlmApi }}
+      forward_client_headers_to_llm_api: true
+      {{- end }}
