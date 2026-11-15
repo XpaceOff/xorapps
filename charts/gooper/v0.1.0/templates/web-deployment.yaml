@@ -1,4 +1,4 @@
-{{- $fullName := include "goojara.fullname" . -}}
+{{- $fullName := include "gooper.fullname" . -}}
 {{- $nfs := eq .Values.storage.type "NFS" -}}
 {{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
 {{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
@@ -27,12 +27,12 @@ kind: Deployment
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "goojara.labels" . | nindent 4 }}
+    {{- include "gooper.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "goojara.selectorLabels" . | nindent 6 }}
+      {{- include "gooper.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -40,7 +40,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "goojara.labels" . | nindent 8 }}
+        {{- include "gooper.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -114,7 +114,7 @@ spec:
             - name: vol-{{ $fullName }}-nfs
               mountPath: {{ .Values.storage.imagesMountPath }}
               subPath: {{ $fullName }}/images
-            # The goojara page cache, shared with the jobs container.
+            # The page cache, shared with the jobs container.
             - name: vol-{{ $fullName }}-nfs
               mountPath: {{ .Values.storage.cacheMountPath }}
               subPath: {{ $fullName }}/cache

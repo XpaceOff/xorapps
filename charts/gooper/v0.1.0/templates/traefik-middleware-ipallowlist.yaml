@@ -1,5 +1,5 @@
 {{- if and .Values.ingress.enabled (or (eq .Values.ingress.exposure "internal") (eq .Values.ingress.exposure "both")) .Values.ingress.internalHostUrl .Values.ingress.internalAllowedCidrs -}}
-{{- $fullName := include "goojara.fullname" . -}}
+{{- $fullName := include "gooper.fullname" . -}}
 {{- $cidrs := .Values.ingress.internalAllowedCidrs -}}
 {{- if not (kindIs "slice" $cidrs) -}}
 {{- $cidrs = splitList "," $cidrs -}}
@@ -9,7 +9,7 @@ kind: Middleware
 metadata:
   name: {{ $fullName }}-tm-ipallowlist
   labels:
-    {{- include "goojara.labels" . | nindent 4 }}
+    {{- include "gooper.labels" . | nindent 4 }}
 spec:
   ipAllowList:
     # DNS is not access control: anyone who knows the Traefik IP can send a

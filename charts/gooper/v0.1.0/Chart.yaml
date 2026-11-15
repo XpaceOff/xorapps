@@ -1,6 +1,6 @@
 apiVersion: v2
-name: goojara
-description: Helm chart for goojara (web frontend + job queue)
+name: gooper
+description: Helm chart for gooper (web frontend + job queue)
 
 # A chart can be either an 'application' or a 'library' chart.
 #

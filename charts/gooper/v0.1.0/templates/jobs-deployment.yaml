@@ -1,4 +1,4 @@
-{{- $fullName := include "goojara.fullname" . -}}
+{{- $fullName := include "gooper.fullname" . -}}
 {{- $nfs := eq .Values.storage.type "NFS" -}}
 {{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
 {{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
@@ -17,7 +17,7 @@ kind: Deployment
 metadata:
   name: {{ $fullName }}-jobs
   labels:
-    {{- include "goojara.labels" . | nindent 4 }}
+    {{- include "gooper.labels" . | nindent 4 }}
     app.kubernetes.io/component: jobs
 spec:
   replicas: 1
@@ -26,7 +26,7 @@ spec:
       # Must not match the web deployment's pods: the Service and the Deployment
       # of web select on name+instance, and a jobs pod with those labels would
       # receive traffic meant for web (and show up under both deployments).
-      app.kubernetes.io/name: {{ include "goojara.name" . }}-jobs
+      app.kubernetes.io/name: {{ include "gooper.name" . }}-jobs
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
@@ -35,9 +35,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        helm.sh/chart: {{ include "goojara.chart" . }}
-        app.kubernetes.io/name: {{ include "goojara.name" . }}-jobs
-        app.kubernetes.io/part-of: {{ include "goojara.name" . }}
+        helm.sh/chart: {{ include "gooper.chart" . }}
+        app.kubernetes.io/name: {{ include "gooper.name" . }}-jobs
+        app.kubernetes.io/part-of: {{ include "gooper.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: jobs
         {{- if .Chart.AppVersion }}
@@ -116,7 +116,7 @@ spec:
             - name: vol-{{ $fullName }}-nfs
               mountPath: {{ .Values.storage.stateMountPath }}
               subPath: {{ $fullName }}/state
-            # The goojara page cache, shared with the web container.
+            # The page cache, shared with the web container.
             - name: vol-{{ $fullName }}-nfs
               mountPath: {{ .Values.storage.cacheMountPath }}
               subPath: {{ $fullName }}/cache

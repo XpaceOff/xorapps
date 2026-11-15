@@ -1,4 +1,4 @@
-# Default values for goojara.
+# Default values for gooper.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -8,7 +8,7 @@ image:
     pullPolicy: IfNotPresent
     tag: "v0.1.0"
   jobs:
-    repository: ghcr.io/xoffio/gooper-jobs
+    repository: ghcr.io/xoffio/gooper-job
     pullPolicy: IfNotPresent
     tag: "v0.1.0"
 
@@ -31,12 +31,18 @@ registry:
 # The application configuration, mounted read-only at /app/config.docker.toml
 # in both containers.
 config:
-  # The full TOML document. Use this when the app settings do not fit the
-  # structured fields below.
+  # How the config file is built:
+  #   chart  - the chart renders the whole file. The paths are derived from the
+  #            storage mount points, so they always match the volumes.
+  #   manual - you write the whole TOML document in config.toml below. Use this
+  #            for settings the chart does not know about. The chart still
+  #            substitutes the group concurrency.
+  mode: chart
+  # The full TOML document. Used when config.mode=manual.
   toml: ""
-  # The job API the web frontend proxies to. Leave empty to use the in-cluster
-  # Service of this release (http://<release>-goojara-jobs-cip:8081).
-  jobsApiUrl: ""
+  # How many episodes of one group job download at the same time
+  # ([groups] concurrency). Used in both modes.
+  groupsConcurrency: 2
   # Timezone of the containers.
   timezone: UTC
 
@@ -90,7 +96,7 @@ storage:
   nfs:
     hostname: ""
     path: ""
-  # Where the shared goojara page cache is mounted inside the containers.
+  # Where the shared page cache is mounted inside the containers.
   cacheMountPath: /data/cache
   # Where the poster image cache is mounted inside the web container.
   imagesMountPath: /data/images

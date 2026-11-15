@@ -52,20 +52,34 @@ questions:
     default: "UTC"
     group: "User"
 
+  - variable: config.mode
+    label: "Configuration Mode"
+    description: "How the config.docker.toml mounted at /app/config.docker.toml is built. 'Chart generates it': the chart writes the whole file, with the paths derived from the storage volumes, so they always match. 'I write it myself': you paste the whole TOML document below, for settings the chart does not know about."
+    type: enum
+    required: true
+    default: "chart"
+    group: "User"
+    options:
+      - value: chart
+        label: "Chart generates it"
+      - value: manual
+        label: "I write it myself"
+
   - variable: config.toml
     label: "Configuration File (TOML)"
-    description: "The content of config.docker.toml, mounted read-only at /app/config.docker.toml in both containers. Leave empty to let the chart generate it with the in-cluster job API address. Use this for the settings the app expects (server, database, paths)."
+    description: "The content of config.docker.toml, mounted read-only at /app/config.docker.toml in both containers. Paste the whole TOML document. The [groups] concurrency is always set by the chart from the field below, so leave it out or it will be overwritten."
     type: multiline
     required: false
     default: ""
     group: "User"
+    show_if: "config.mode=manual"
 
-  - variable: config.jobsApiUrl
-    label: "Job API URL"
-    description: "The address of the job API that the web frontend proxies to. Leave empty to use the in-cluster Service of this release."
-    type: string
+  - variable: config.groupsConcurrency
+    label: "Group Concurrency"
+    description: "How many episodes of one group job download at the same time ([groups] concurrency)."
+    type: int
     required: false
-    default: ""
+    default: 2
     group: "User"
 
   #  ________________________________________________________
@@ -91,7 +105,7 @@ questions:
     description: "Docker image repository for the job queue."
     type: string
     required: false
-    default: "ghcr.io/xoffio/gooper-jobs"
+    default: "ghcr.io/xoffio/gooper-job"
     group: "Container Images"
 
   - variable: image.jobs.tag
@@ -158,14 +172,14 @@ questions:
           label: "Both (public + internal)"
     - variable: ingress.hostUrl
       required: false
-      description: "Public hostname of the app, reachable from the internet (e.g. goojara.example.com). Gets a certificate from cert-manager and redirects to HTTPS."
+      description: "Public hostname of the app, reachable from the internet (e.g. gooper.example.com). Gets a certificate from cert-manager and redirects to HTTPS."
       type: hostname
       label: "Public Hostname"
       default: ""
       show_if: "ingress.exposure=external||ingress.exposure=both"
     - variable: ingress.internalHostUrl
       required: false
-      description: "Internal hostname of the app, resolved only by the internal DNS (e.g. goojara.cluster). Served over plain HTTP and restricted to the Allowed Networks below, so it is not reachable from outside your network."
+      description: "Internal hostname of the app, resolved only by the internal DNS (e.g. gooper.cluster). Served over plain HTTP and restricted to the Allowed Networks below, so it is not reachable from outside your network."
       type: hostname
       label: "Internal Hostname"
       default: ""

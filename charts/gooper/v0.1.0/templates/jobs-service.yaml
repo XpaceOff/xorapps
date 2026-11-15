@@ -1,11 +1,11 @@
-{{- $fullName := include "goojara.fullname" . -}}
+{{- $fullName := include "gooper.fullname" . -}}
 
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ $fullName }}-jobs-cip
   labels:
-    {{- include "goojara.labels" . | nindent 4 }}
+    {{- include "gooper.labels" . | nindent 4 }}
     app.kubernetes.io/component: jobs
 spec:
   # Only the web server talks to the job API, so it stays a ClusterIP: it is
@@ -17,5 +17,5 @@ spec:
       targetPort: {{ .Values.service.jobsContainerPort }}
       protocol: TCP
   selector:
-    app.kubernetes.io/name: {{ include "goojara.name" . }}-jobs
+    app.kubernetes.io/name: {{ include "gooper.name" . }}-jobs
     app.kubernetes.io/instance: {{ .Release.Name }}

@@ -1,5 +1,5 @@
 {{- if and .Values.ingress.enabled -}}
-{{- $fullName := include "goojara.fullname" . -}}
+{{- $fullName := include "gooper.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
 {{- $exposure := .Values.ingress.exposure -}}
 {{- $public := or (eq $exposure "external") (eq $exposure "both") -}}
@@ -29,7 +29,7 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}-in
   labels:
-    {{- include "goojara.labels" . | nindent 4 }}
+    {{- include "gooper.labels" . | nindent 4 }}
   {{- if or .Values.ingress.annotations $tls $middlewares }}
   annotations:
   {{- if .Values.ingress.issuer }}

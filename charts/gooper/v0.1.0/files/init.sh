@@ -7,7 +7,7 @@ release_dir="/tmp_mount/$1"
 # container starts, so create the release directories on first install.
 #   web   - the poster image cache
 #   jobs  - the downloads, the job database and the per-job logs
-#   cache - the shared goojara page cache
+#   cache - the shared page cache
 mkdir -p "$release_dir/images"
 mkdir -p "$release_dir/downloads"
 mkdir -p "$release_dir/state"

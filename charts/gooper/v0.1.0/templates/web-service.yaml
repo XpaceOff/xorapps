@@ -1,11 +1,11 @@
-{{- $fullName := include "goojara.fullname" . -}}
+{{- $fullName := include "gooper.fullname" . -}}
 
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ $fullName }}-cip
   labels:
-    {{- include "goojara.labels" . | nindent 4 }}
+    {{- include "gooper.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -14,4 +14,4 @@ spec:
       targetPort: {{ .Values.service.webContainerPort }}
       protocol: TCP
   selector:
-    {{- include "goojara.selectorLabels" . | nindent 4 }}
+    {{- include "gooper.selectorLabels" . | nindent 4 }}

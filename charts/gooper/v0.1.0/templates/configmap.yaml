@@ -1,0 +1,57 @@
+{{- $fullName := include "gooper.fullname" . -}}
+{{- $storage := .Values.storage -}}
+{{- $jobsHost := include "gooper.jobsServiceName" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-configs
+  labels:
+    {{- include "gooper.labels" . | nindent 4 }}
+data:
+  # The app configuration, mounted read-only at /app/config.docker.toml.
+  config.docker.toml: |
+    {{- if eq .Values.config.mode "manual" }}
+    {{- include "gooper.manualToml" . | nindent 4 }}
+    {{- else }}
+    [server]
+    # The address the web server uses to reach the job server.
+    host = {{ $jobsHost | quote }}
+    port = {{ .Values.service.jobsPort }}
+    # The address the job server listens on. It must be 0.0.0.0: the host
+    # above is a Service name the job server cannot bind to.
+    bind_host = "0.0.0.0"
+
+    [storage]
+    # Directory where downloaded videos are saved. file_name is appended to this.
+    save_dir = {{ $storage.downloadsMountPath | quote }}
+
+    [database]
+    # Relative paths are resolved from this project directory.
+    path = {{ printf "%s/jobs.db" $storage.stateMountPath | quote }}
+
+    [logs]
+    # One log file per job, with a timestamp on each line.
+    dir = {{ printf "%s/logs" $storage.stateMountPath | quote }}
+
+    [downloader]
+    # Relative paths are resolved from this project directory.
+    script = "get_m3u8.py"
+    # Used instead of script when the link is a wootly.ch page.
+    wootly_script = "get_mp4.py"
+    # Resolves an episode page to its links (used by group jobs).
+    links_script = "goojara.py"
+
+    [web]
+    host = "0.0.0.0"
+    port = {{ .Values.service.webContainerPort }}
+    # Relative paths are resolved from this project directory.
+    list_script = "goojara_list.py"
+    links_script = "goojara.py"
+    # Poster images are downloaded here once and reused.
+    image_dir = {{ $storage.imagesMountPath | quote }}
+
+    [groups]
+    # How many episodes of one group job download at the same time.
+    concurrency = {{ .Values.config.groupsConcurrency }}
+    {{- end }}
+  init.sh: {{ .Files.Get "files/init.sh" | quote }}
