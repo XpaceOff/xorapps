@@ -6,11 +6,11 @@ image:
   web:
     repository: ghcr.io/xoffio/gooper-web
     pullPolicy: IfNotPresent
-    tag: "v0.1.0"
+    tag: "v0.3.0"
   jobs:
     repository: ghcr.io/xoffio/gooper-jobs
     pullPolicy: IfNotPresent
-    tag: "v0.1.0"
+    tag: "v0.3.0"
 
 # The images live in a private GitHub Container Registry repository, so the
 # nodes need a GitHub token to pull them.
