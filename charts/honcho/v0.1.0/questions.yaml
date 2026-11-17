@@ -158,7 +158,7 @@ questions:
   # |______________________ Database ________________________|
   - variable: database.type
     label: "Database"
-    description: "'Use an existing Postgres (URL)': the connection string comes from the Database URL field, or from DB_CONNECTION_URI in the existing Secret. 'Deploy my own Postgres': a PostgreSQL 15 with pgvector is created in this release; its password comes from the Postgres Password field or POSTGRES_PASSWORD in the existing Secret."
+    description: "'Use an existing Postgres': enter the host, port, user, password and database name of your server (or pass DB_CONNECTION_URI in the existing Secret). 'Deploy my own Postgres': a PostgreSQL 15 with pgvector is created in this release and Honcho connects to it automatically; its password comes from the Postgres Password field or POSTGRES_PASSWORD in the existing Secret."
     type: enum
     required: true
     default: "external"
@@ -167,14 +167,46 @@ questions:
       - value: internal
         label: "Deploy my own Postgres"
       - value: external
-        label: "Use an existing Postgres (URL)"
+        label: "Use an existing Postgres"
 
-  - variable: envVars.honcho.dbConnectionUri
-    label: "Database URL"
-    description: "PostgreSQL connection string, e.g. postgresql+psycopg://honcho:password@db:5432/honcho. The prefix must be postgresql+psycopg. The database needs the pgvector extension."
+  - variable: database.external.host
+    label: "Database Host"
+    description: "Hostname or IP of the existing Postgres server. The database needs the pgvector extension."
     type: string
     required: false
     default: ""
+    group: "Database"
+    show_if: "database.type=external&&secretSource=create"
+
+  - variable: database.external.port
+    label: "Database Port"
+    type: int
+    required: false
+    default: 5432
+    group: "Database"
+    show_if: "database.type=external&&secretSource=create"
+
+  - variable: database.external.user
+    label: "Database User"
+    type: string
+    required: false
+    default: "honcho"
+    group: "Database"
+    show_if: "database.type=external&&secretSource=create"
+
+  - variable: database.external.password
+    label: "Database Password"
+    type: password
+    required: false
+    default: ""
+    group: "Database"
+    show_if: "database.type=external&&secretSource=create"
+
+  - variable: database.external.dbName
+    label: "Database Name"
+    type: string
+    required: false
+    default: "honcho"
     group: "Database"
     show_if: "database.type=external&&secretSource=create"
 

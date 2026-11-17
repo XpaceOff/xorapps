@@ -56,6 +56,25 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 {{- end }}
 
+{{/*
+Connection URI of an external Postgres. envVars.honcho.dbConnectionUri wins when
+set; otherwise the URI is built from the database.external fields.
+*/}}
+{{- define "honcho.externalDbUri" -}}
+{{- if .Values.envVars.honcho.dbConnectionUri -}}
+{{- .Values.envVars.honcho.dbConnectionUri -}}
+{{- else -}}
+{{- $ext := .Values.database.external -}}
+{{- if not $ext.host -}}
+{{- fail "Database Host is required when Database is 'Use an existing Postgres'" -}}
+{{- end -}}
+{{- if not $ext.password -}}
+{{- fail "Database Password is required when Database is 'Use an existing Postgres'" -}}
+{{- end -}}
+{{- printf "postgresql+psycopg://%s:%s@%s:%v/%s" ($ext.user | urlquery) ($ext.password | urlquery) $ext.host $ext.port ($ext.dbName | urlquery) -}}
+{{- end -}}
+{{- end }}
+
 {{/* Redis URL for the cache. Empty when Redis is disabled. */}}
 {{- define "honcho.cacheUrl" -}}
 {{- $fullName := include "honcho.fullname" . -}}
@@ -79,11 +98,21 @@ database and the same cache, so they get the same settings.
 */}}
 {{- define "honcho.env" -}}
 {{- $secretName := include "honcho.secretName" . -}}
+{{- if eq .Values.database.type "internal" }}
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: POSTGRES_PASSWORD
+- name: DB_CONNECTION_URI
+  value: {{ printf "postgresql+psycopg://%s:$(DB_PASSWORD)@%s-db-cip:%v/%s" (.Values.database.internal.user | urlquery) (include "honcho.fullname" .) .Values.database.internal.service.port (.Values.database.internal.dbName | urlquery) | quote }}
+{{- else }}
 - name: DB_CONNECTION_URI
   valueFrom:
     secretKeyRef:
       name: {{ $secretName }}
       key: DB_CONNECTION_URI
+{{- end }}
 - name: LLM_OPENAI_API_KEY
   valueFrom:
     secretKeyRef:
@@ -142,6 +171,10 @@ database and the same cache, so they get the same settings.
   value: "true"
 - name: SENTRY_DSN
   value: {{ .Values.envVars.honcho.sentryDsn | quote }}
+{{- end }}
+{{- range .Values.extraEnv }}
+- name: {{ .name }}
+  value: {{ .value | quote }}
 {{- end }}
 {{- end }}
 

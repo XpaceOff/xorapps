@@ -35,6 +35,24 @@ envVars:
     # Namespace prefix for all vector namespaces. Keep it stable.
     namespace: "honcho"
 
+    # --- Models ---
+    # Honcho uses an LLM for memory extraction, summarization, dialectic chat
+    # and dream consolidation, plus an embedding model for the vectors.
+    # The defaults are the built-in OpenAI ones (gpt-5.4-mini and
+    # text-embedding-3-small). Set them to the model names your provider
+    # serves when it is not OpenAI itself.
+    #
+    # With an OpenAI-compatible proxy (LiteLLM, vLLM, Ollama, OpenRouter):
+    #   1. baseUrl          -> the proxy root, e.g. http://litellm:4000/v1
+    #   2. chatModel         -> the chat model name
+    #   3. embeddingModel    -> the embedding model name
+    #   4. embeddingDimensions -> the number of dimensions that model returns.
+    #      It must match the pgvector column width: Honcho refuses to start
+    #      when it does not.
+    chatModel: ""
+    embeddingModel: ""
+    embeddingDimensions: 0 # 0 = keep the Honcho default (1536)
+
     # --- Authentication ---
     # Honcho refuses to boot with AUTH_USE_AUTH=true and no AUTH_JWT_SECRET.
     # When enabled, API keys are minted with POST /v3/keys.
@@ -55,6 +73,18 @@ envVars:
     metricsEnabled: false
     sentryEnabled: false
     sentryDsn: ""
+
+# Extra environment variables for the API and the deriver. Use this for the
+# Honcho settings the chart does not expose, e.g. the model names and the
+# embedding dimensions of a non-OpenAI provider:
+#   extraEnv:
+#     - name: DERIVER_MODEL_CONFIG__MODEL
+#       value: haiku-5-5
+#     - name: EMBEDDING_MODEL_CONFIG__MODEL
+#       value: amazon.titan-embed-text-v2:0
+#     - name: EMBEDDING_VECTOR_DIMENSIONS
+#       value: "1024"
+extraEnv: []
 
 # Number of API server processes per pod. Each process opens its own connection
 # pool, so keep API_WORKERS * (DB_POOL_SIZE + DB_MAX_OVERFLOW) below the
@@ -83,10 +113,18 @@ auth:
   enabled: false
 
 database:
-  # external: use envVars.honcho.dbConnectionUri
+  # external: use the database.external fields (or envVars.honcho.dbConnectionUri)
   # internal: deploy a pgvector Postgres 15 in this release (data on NFS)
   type: external
-  dbConnectionUri: "" # postgresql+psycopg://user:pass@host:5432/dbname
+  # Used when type=external and secretSource=create. The connection URI is
+  # built from these fields. envVars.honcho.dbConnectionUri, when set, is used
+  # as-is instead (postgresql+psycopg://user:pass@host:5432/dbname).
+  external:
+    host: ""
+    port: 5432
+    user: honcho
+    password: ""
+    dbName: honcho
   internal:
     image: pgvector/pgvector:pg15
     user: honcho
