@@ -172,6 +172,21 @@ database and the same cache, so they get the same settings.
 - name: SENTRY_DSN
   value: {{ .Values.envVars.honcho.sentryDsn | quote }}
 {{- end }}
+{{- $chatModel := .Values.envVars.honcho.chatModel | default "gpt-5.4-mini" }}
+{{- $embeddingModel := .Values.envVars.honcho.embeddingModel | default "text-embedding-3-small" }}
+{{- $embeddingDimensions := .Values.envVars.honcho.embeddingDimensions | default 1536 }}
+- name: DERIVER_MODEL_CONFIG__MODEL
+  value: {{ $chatModel | quote }}
+- name: SUMMARY_MODEL_CONFIG__MODEL
+  value: {{ $chatModel | quote }}
+{{- range $level := list "minimal" "low" "medium" "high" "max" }}
+- name: DIALECTIC_LEVELS__{{ $level }}__MODEL_CONFIG__MODEL
+  value: {{ $chatModel | quote }}
+{{- end }}
+- name: EMBEDDING_MODEL_CONFIG__MODEL
+  value: {{ $embeddingModel | quote }}
+- name: EMBEDDING_VECTOR_DIMENSIONS
+  value: {{ $embeddingDimensions | toString | quote }}
 {{- range .Values.extraEnv }}
 - name: {{ .name }}
   value: {{ .value | quote }}

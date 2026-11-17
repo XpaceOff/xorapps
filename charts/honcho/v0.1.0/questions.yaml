@@ -95,7 +95,7 @@ questions:
 
   - variable: existingSecret
     label: "Existing Secret"
-    description: "Secret in this namespace with keys DB_CONNECTION_URI, LLM_OPENAI_API_KEY (see README)."
+    description: "Secret in this namespace. Keys: LLM_OPENAI_API_KEY (or another LLM key). For an external Postgres also DB_CONNECTION_URI. For Deploy my own Postgres also POSTGRES_PASSWORD (the chart builds the connection URI itself). See README."
     type: secret
     required: false
     default: ""
@@ -347,6 +347,30 @@ questions:
     type: string
     required: true
     default: "honcho"
+    group: "Application"
+
+  - variable: envVars.honcho.chatModel
+    label: "Chat Model"
+    description: "Model used for memory extraction, summaries, dialectic chat and dream consolidation. Default: gpt-5.4-mini (Honcho's built-in OpenAI model). Change it to a model name your LLM provider serves."
+    type: string
+    required: true
+    default: "gpt-5.4-mini"
+    group: "Application"
+
+  - variable: envVars.honcho.embeddingModel
+    label: "Embedding Model"
+    description: "Model used for the vectors stored in pgvector. Default: text-embedding-3-small (Honcho's built-in OpenAI model)."
+    type: string
+    required: true
+    default: "text-embedding-3-small"
+    group: "Application"
+
+  - variable: envVars.honcho.embeddingDimensions
+    label: "Embedding Dimensions"
+    description: "Number of dimensions the embedding model returns. Default: 1536 (text-embedding-3-small). Must match the pgvector column of the existing database, or Honcho refuses to start."
+    type: int
+    required: true
+    default: 1536
     group: "Application"
 
   - variable: envVars.honcho.vectorStoreType
