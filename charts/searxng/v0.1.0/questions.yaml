@@ -1,0 +1,169 @@
+questions:
+
+  #  ________________________________________________________
+  # |_______________________ Security ______________________|
+  - variable: secretSource
+    label: "Credentials Source"
+    description: "Create the SearXNG secret from the field below, or select an existing Secret in this namespace."
+    type: enum
+    required: true
+    default: "create"
+    group: "Security"
+    options:
+      - value: create
+        label: "Enter value here"
+      - value: existing
+        label: "Use an existing Secret"
+
+  - variable: searxng.secret
+    label: "SearXNG Secret"
+    description: "SEARXNG_SECRET: a long random string, e.g. openssl rand -hex 32. Signs sessions - changing it logs users out. Leave empty when using an existing Secret."
+    type: password
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=create"
+
+  - variable: existingSecret
+    label: "Existing Secret"
+    description: "Secret in this namespace with the key SEARXNG_SECRET (see README)."
+    type: secret
+    required: false
+    default: ""
+    group: "Security"
+    show_if: "secretSource=existing"
+
+  #  ________________________________________________________
+  # |___________________ SearXNG Settings ___________________|
+  - variable: searxng.settingsYml
+    label: "Custom settings.yml"
+    description: "Optional. Written into the chart-managed Secret and mounted at /etc/searxng/settings.yml (only with 'Enter value here' above). Start from 'use_default_settings: true' - see https://docs.searxng.org/admin/settings/settings.html. Environment variables (the secret, the base URL and entries in `env`) override matching values in this file."
+    type: multiline
+    required: false
+    default: ""
+    group: "SearXNG Settings"
+    show_if: "secretSource=create"
+
+  #  ________________________________________________________
+  # |_______________________ Ingress _______________________|
+  - variable: ingress.enabled
+    label: "Enable Ingress"
+    type: boolean
+    default: false
+    required: true
+    group: "Gateway/Ingress"
+    show_subquestion_if: true
+    subquestions:
+    - variable: ingress.exposure
+      label: "Exposure"
+      description: "External: public hostname with a certificate from cert-manager. Internal: hostname resolved only by the internal DNS - no public certificate can be issued for such a name, so it is served over HTTP and restricted to the allowed networks. Both: publish the two hostnames side by side - SearXNG still knows only one base URL (see below), the other hostname is just an extra way to open the UI."
+      type: enum
+      required: true
+      default: "external"
+      options:
+        - value: external
+          label: "External (public)"
+        - value: internal
+          label: "Internal (cluster only)"
+        - value: both
+          label: "Both (public + internal)"
+    - variable: ingress.hostUrl
+      required: false
+      description: "Public hostname of SearXNG, reachable from the internet (e.g. searxng.example.com). Gets a certificate from cert-manager and redirects to HTTPS. Also used as the SearXNG base URL unless you set it below."
+      type: hostname
+      label: "Public Hostname"
+      default: ""
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalHostUrl
+      required: false
+      description: "Internal hostname of SearXNG, resolved only by the internal DNS (e.g. searxng.cluster). Served over plain HTTP and restricted to the Allowed Networks below, so it is not reachable from outside your network."
+      type: hostname
+      label: "Internal Hostname"
+      default: ""
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+    - variable: ingress.tlsEnabled
+      label: "Enable TLS"
+      type: boolean
+      required: true
+      default: true
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.issuer
+      required: false
+      description: "cert-manager Issuer that issues the certificate. It is looked up in the namespace where this app is installed, so install the app in the same namespace as the Issuer or use the YAML editor to name another one."
+      type: enum
+      label: "Issuer"
+      default: "letsencrypt-cert-prod"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+      options:
+        - value: letsencrypt-cert-prod
+          label: "Let's Encrypt (production)"
+        - value: letsencrypt-cert-staging
+          label: "Let's Encrypt (staging)"
+        - value: rancher
+          label: "Self-signed (Rancher CA)"
+    - variable: ingress.forceHttps
+      label: "Use HTTPS only"
+      default: true
+      required: true
+      type: boolean
+      description: "If enabled, all requests to http will be redirected to https"
+      show_if: "ingress.exposure=external||ingress.exposure=both"
+    - variable: ingress.internalAllowedCidrs
+      label: "Allowed Networks"
+      description: "Comma separated CIDR ranges allowed to reach the internal hostname. Traefik answers 403 to every other source, even if it knows the hostname. The default covers every private range (RFC 1918), so any internal network works: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Narrow it to the ranges you trust."
+      type: string
+      required: false
+      default: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      show_if: "ingress.exposure=internal||ingress.exposure=both"
+
+  - variable: searxng.baseUrl
+    label: "Base URL (SEARXNG_BASE_URL)"
+    description: "Absolute URL SearXNG advertises for itself (redirects, the opensearch plugin). Leave empty to use the Public Hostname, or the Internal Hostname when only the internal one is published."
+    type: string
+    required: false
+    default: ""
+    group: "Gateway/Ingress"
+
+  #  ________________________________________________________
+  # |_______________________ Storage _______________________|
+  - variable: storage.type
+    label: "Storage Type"
+    description: "SearXNG keeps only a disposable cache - 'None' is fine. 'NFS' keeps /var/cache/searxng on an NFS share."
+    type: enum
+    required: true
+    default: "None"
+    group: "Storage"
+    options:
+      - None
+      - NFS
+  - variable: storage.nfs.hostname
+    label: "NFS Server's Hostname"
+    description: "FQDN or IP of the NFS server."
+    type: string
+    required: true
+    group: "Storage"
+    show_if: "storage.type=NFS"
+  - variable: storage.nfs.path
+    label: "NFS Server's Path"
+    description: "Path of an EXISTING, EXPORTED directory on the NFS server (e.g. /volume1/k8s). Do not add a release subfolder; the chart creates one with subPath."
+    type: string
+    required: true
+    group: "Storage"
+    show_if: "storage.type=NFS"
+
+  #  ________________________________________________________
+  # |________________________ Image ________________________|
+  - variable: image.repository
+    label: "Image Repository"
+    description: "Docker image repository for SearXNG."
+    type: string
+    required: true
+    default: "ghcr.io/searxng/searxng"
+    group: "Container Images"
+  - variable: image.tag
+    label: "Image Tag"
+    description: "SearXNG version to deploy."
+    type: string
+    required: true
+    default: "2026.11.20-1ebea4a07"
+    group: "Container Images"

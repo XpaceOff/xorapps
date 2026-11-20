@@ -1,0 +1,176 @@
+{{- $fullName := include "searxng.fullname" . -}}
+{{- $secretName := printf "%s-config" $fullName -}}
+{{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
+{{- $nfs := and (eq .Values.storage.type "NFS") .Values.storage.nfs.hostname .Values.storage.nfs.path -}}
+{{- $settingsMount := and (eq .Values.secretSource "create") .Values.searxng.settingsYml -}}
+{{- $scheme := "http" -}}
+{{- $publicHost := "" -}}
+{{- if .Values.ingress.enabled -}}
+{{- if and (or (eq .Values.ingress.exposure "external") (eq .Values.ingress.exposure "both")) .Values.ingress.hostUrl -}}
+{{- $publicHost = .Values.ingress.hostUrl -}}
+{{- if and .Values.ingress.tlsEnabled .Values.ingress.issuer -}}{{- $scheme = "https" -}}{{- end -}}
+{{- else -}}
+{{- $publicHost = .Values.ingress.internalHostUrl -}}
+{{- end -}}
+{{- end -}}
+{{- $baseUrl := .Values.searxng.baseUrl -}}
+{{- if and (not $baseUrl) $publicHost -}}
+{{- $baseUrl = printf "%s://%s/" $scheme $publicHost -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "searxng.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "searxng.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "searxng.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+
+      {{- if $nfs }}
+      # Creates the release directory on the NFS share and fixes its
+      # permissions, so the subPath mount in the main container can start.
+      initContainers:
+        - name: prepare-nfs-dirs
+          image: busybox:1.35.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
+          volumeMounts:
+            - name: vol-{{ $fullName }}-nfs
+              mountPath: /tmp_mount
+            - name: vol-configs
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+              readOnly: false
+            - name: vol-empty-tmp
+              mountPath: /scripts-w
+      {{- end }}
+
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # /healthz answers "OK" and touches no backend, so it is safe for
+          # both liveness and readiness.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          env:
+            # The app reads this env var (searx/settings_defaults.py) and it
+            # overrides server.secret_key from settings.yml. It comes from the
+            # Secret, never inline in the Deployment spec.
+            - name: SEARXNG_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: SEARXNG_SECRET
+            {{- if $baseUrl }}
+            # Absolute URL SearXNG advertises for itself (redirects, opensearch
+            # plugin). Omitted without an ingress - SearXNG then derives it
+            # from the request Host header.
+            - name: SEARXNG_BASE_URL
+              value: {{ $baseUrl | quote }}
+            {{- end }}
+            {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          {{- if or $nfs $settingsMount }}
+          volumeMounts:
+            {{- if $settingsMount }}
+            - mountPath: /etc/searxng/settings.yml
+              name: vol-config-file
+              subPath: settings.yml
+              readOnly: true
+            {{- end }}
+            {{- if $nfs }}
+            - mountPath: {{ .Values.storage.mountPath }}
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/cache
+            {{- end }}
+          {{- end }}
+
+      {{- if or $nfs $settingsMount }}
+      volumes:
+        {{- if $settingsMount }}
+        - name: vol-config-file
+          secret:
+            secretName: {{ $secretName }}
+        {{- end }}
+        {{- if $nfs }}
+        - name: vol-{{ $fullName }}-nfs
+          nfs:
+            server: {{ .Values.storage.nfs.hostname }}
+            path: {{ .Values.storage.nfs.path }}
+        - name: vol-configs
+          configMap:
+            name: {{ $fullName }}-configs
+        - name: vol-empty-tmp
+          emptyDir: {}
+        {{- end }}
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
