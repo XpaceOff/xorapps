@@ -2,12 +2,33 @@
 {{- $secretName := printf "%s-config" $fullName -}}
 {{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
 {{- $nfs := and (eq .Values.storage.type "NFS") .Values.storage.nfs.hostname .Values.storage.nfs.path -}}
-{{- $formatsExtra := or .Values.searxng.searchFormats.json .Values.searxng.searchFormats.csv .Values.searxng.searchFormats.rss -}}
-{{- $settingsMount := and (eq .Values.secretSource "create") (or .Values.searxng.settingsYml $formatsExtra) -}}
-{{- $contactUrl := "" -}}
-{{- if and .Values.searxng.contactUrl.enabled .Values.searxng.contactUrl.email -}}
-{{- $contactUrl = printf "mailto:%s" .Values.searxng.contactUrl.email -}}
+{{- /* searxng.* values may be missing from --reuse-values merges of releases
+       made with older chart versions - resolve them through a dict so a
+       missing key is nil, never a render error. */ -}}
+{{- $sxng := dict -}}
+{{- with .Values.searxng -}}
+{{- if kindIs "map" . -}}
+{{- $sxng = . -}}
 {{- end -}}
+{{- end -}}
+{{- $formatsCfg := dict -}}
+{{- if kindIs "map" $sxng.searchFormats -}}
+{{- $formatsCfg = $sxng.searchFormats -}}
+{{- end -}}
+{{- $formatsExtra := or $formatsCfg.json $formatsCfg.csv $formatsCfg.rss -}}
+{{- $contactCfg := dict -}}
+{{- if kindIs "map" $sxng.contactUrl -}}
+{{- $contactCfg = $sxng.contactUrl -}}
+{{- end -}}
+{{- $contactEnabled := default false $contactCfg.enabled -}}
+{{- $contactEmail := default "" $contactCfg.email -}}
+{{- $contactUrl := "" -}}
+{{- if and $contactEnabled $contactEmail -}}
+{{- $contactUrl = printf "mailto:%s" $contactEmail -}}
+{{- end -}}
+{{- $settingsYml := default "" $sxng.settingsYml -}}
+{{- $settingsFromSecret := and (eq .Values.secretSource "create") $settingsYml -}}
+{{- $settingsMount := or $settingsFromSecret $formatsExtra -}}
 {{- $scheme := "http" -}}
 {{- $publicHost := "" -}}
 {{- if .Values.ingress.enabled -}}
@@ -18,7 +39,7 @@
 {{- $publicHost = .Values.ingress.internalHostUrl -}}
 {{- end -}}
 {{- end -}}
-{{- $baseUrl := .Values.searxng.baseUrl -}}
+{{- $baseUrl := default "" $sxng.baseUrl -}}
 {{- if and (not $baseUrl) $publicHost -}}
 {{- $baseUrl = printf "%s://%s/" $scheme $publicHost -}}
 {{- end -}}
@@ -142,7 +163,9 @@ spec:
           {{- if or $nfs $settingsMount }}
           volumeMounts:
             {{- if $nfs }}
-            - mountPath: {{ .Values.storage.mountPath }}
+            # /etc/searxng is fixed by the image - the app reads its config
+            # only from there.
+            - mountPath: /etc/searxng
               name: vol-{{ $fullName }}-nfs
               subPath: {{ $fullName }}/config
             {{- end }}
@@ -172,8 +195,15 @@ spec:
         {{- end }}
         {{- if $settingsMount }}
         - name: vol-config-file
+          {{- if $settingsFromSecret }}
           secret:
             secretName: {{ $secretName }}
+          {{- else }}
+          # Formats fragment rendered by the chart - not secret, so it lives
+          # in the ConfigMap and works with any Credentials Source.
+          configMap:
+            name: {{ $fullName }}-configs
+          {{- end }}
         {{- end }}
       {{- end }}
 

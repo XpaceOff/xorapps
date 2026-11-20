@@ -137,8 +137,8 @@ The **SearXNG Settings** group has a checkbox per extra format; `json`
 enables the JSON search API, e.g. `GET /search?q=searxng&format=json`.
 
 There is no environment variable for this setting, so enabling any of the
-checkboxes makes the chart render its own `settings.yml` into the Secret it
-manages, containing:
+checkboxes makes the chart render its own `settings.yml` into its ConfigMap
+(`<release>-searxng-configs`), containing:
 
 ```yaml
 use_default_settings: true
@@ -154,9 +154,10 @@ search:
 
 Notes:
 
-- Requires Credentials Source **Enter value here** (the chart must render
-  the file), and cannot be combined with `searxng.settingsYml` - set
-  `search.formats` inside your own file instead.
+- Works with any Credentials Source (the fragment is not a secret, so it
+  lives in the chart's ConfigMap), but cannot be combined with
+  `searxng.settingsYml` - set `search.formats` inside your own file
+  instead.
 - The rendered file is mounted over `/etc/searxng/settings.yml`, so with
   `storage.type=NFS` it overlays the copy on the share and the entrypoint
   never writes its own while any format is enabled.

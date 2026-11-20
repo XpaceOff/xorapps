@@ -1,7 +1,36 @@
 {{- $fullName := include "searxng.fullname" . -}}
+{{- $sxng := dict -}}
+{{- with .Values.searxng -}}
+{{- if kindIs "map" . -}}
+{{- $sxng = . -}}
+{{- end -}}
+{{- end -}}
+{{- $formatsCfg := dict -}}
+{{- if kindIs "map" $sxng.searchFormats -}}
+{{- $formatsCfg = $sxng.searchFormats -}}
+{{- end -}}
+{{- $formatsExtra := or $formatsCfg.json $formatsCfg.csv $formatsCfg.rss -}}
+{{- $formats := list "html" -}}
+{{- if $formatsCfg.json }}{{- $formats = append $formats "json" }}{{- end }}
+{{- if $formatsCfg.csv }}{{- $formats = append $formats "csv" }}{{- end }}
+{{- if $formatsCfg.rss }}{{- $formats = append $formats "rss" }}{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ $fullName }}-configs
 data:
   init.sh: {{ .Files.Get "files/init.sh" | quote }}
+  {{- if $formatsExtra }}
+  # Rendered from searxng.searchFormats. search.formats replaces the
+  # built-in [html] default (there is no env var for it), so html is always
+  # listed first.
+  settings.yml: |
+    use_default_settings: true
+
+    server:
+      image_proxy: true
+
+    search:
+      formats:
+{{ $formats | toYaml | indent 8 }}
+  {{- end }}

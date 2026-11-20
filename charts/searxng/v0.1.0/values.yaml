@@ -29,7 +29,7 @@ searxng:
   # Output formats the search endpoint offers on top of the always-on html
   # (json enables the JSON search API). There is no env var for this
   # setting: enabling any of them makes the chart render its own
-  # settings.yml (see README). Not supported with an existing Secret or a
+  # settings.yml into its ConfigMap (see README). Cannot be combined with a
   # custom settingsYml - set search.formats there instead.
   searchFormats:
     json: false
@@ -87,19 +87,19 @@ ingress:
   hostPathType: Prefix
 
 storage:
-  # Mount an NFS share at /etc/searxng so the settings.yml the container
-  # entrypoint generates on first start persists across pod restarts and can
-  # be edited directly on the share (extra files such as limiter.toml can be
-  # dropped next to it). 'None' keeps /etc/searxng in the pod's ephemeral
-  # storage - settings.yml is then regenerated on every start, which is safe
-  # because SEARXNG_SECRET and SEARXNG_BASE_URL come from the env anyway.
+  # Mount an NFS share at /etc/searxng (fixed by the image - the app only
+  # reads its config from there) so the settings.yml the container entrypoint
+  # generates on first start persists across pod restarts and can be edited
+  # directly on the share (extra files such as limiter.toml can be dropped
+  # next to it). 'None' keeps /etc/searxng in the pod's ephemeral storage -
+  # settings.yml is then regenerated on every start, which is safe because
+  # SEARXNG_SECRET and SEARXNG_BASE_URL come from the env anyway.
   # The compose-style ./data mount has no equivalent: no application code
   # writes to /var/cache/searxng in this release.
   type: None
   nfs:
     hostname: ""
     path: ""
-  mountPath: /etc/searxng
 
 imagePullSecrets: []
 nameOverride: ""
