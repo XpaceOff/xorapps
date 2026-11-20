@@ -112,7 +112,30 @@ owned by another user. The NFS path must be
 an **existing, exported** directory (e.g. `/volume1/k8s`).
 
 Because the embedded Postgres data directory is a single-writer store, keep
-`replicaCount: 1` when using NFS.
+`replicaCount: 1` when using NFS. The chart fails to render otherwise.
+
+## Embedded database lifecycle
+
+The Postgres data directory lives in the container and (with NFS) on the share,
+so the chart protects it at every pod transition:
+
+- **Deployments use the `Recreate` strategy.** A rolling update would start the
+  replacement pod while the old one is still running, and both would open the
+  same data directory — two postmasters then fight over `postmaster.pid` and
+  shut each other down. `Recreate` terminates the old pod before the
+  replacement is created.
+- **`terminationGracePeriodSeconds: 90`.** The image's `start-all.sh` traps
+  SIGTERM and shuts down gracefully (draining in-flight tasks, then flushing
+  the WAL and checkpointing, up to 60s). The default 30s grace SIGKILLs the
+  pod mid-shutdown, leaving the database in "not properly shut down" state.
+- **Stale `postmaster.pid` cleanup.** The init container removes any pidfile
+  left behind by a hard kill (node crash, OOM): the recorded PID belongs to
+  the previous container and can collide with a live PID in the new one,
+  which can trick the freshly started postmaster into shutting itself down.
+- **Liveness also checks the database.** If the embedded Postgres dies while
+  the API process keeps running, the only fix is a pod restart, so liveness
+  fails and Kubernetes restarts the pod instead of leaving it not-ready
+  forever.
 
 ## Memory
 
@@ -216,10 +239,10 @@ helm upgrade hindsight charts/hindsight/v0.1.0 -n <namespace> --reuse-values \
 
 ## Health checks
 
-| Probe | Endpoint | Behaviour |
+| Probe | Check | Behaviour |
 |---|---|---|
 | startup | `GET /health/live` | Up to ~10 minutes (60 × 10s) for the embedding and reranker models and embedded Postgres to load. Liveness and readiness wait for it |
-| liveness | `GET /health/live` | In-process only, never touches the database |
+| liveness | exec: `pg_isready` + `GET /health/live` | Restarts the pod when the embedded Postgres is dead or the API is unresponsive — a pod restart is the only fix for a dead embedded database |
 | readiness | `GET /health` | Verifies the database is reachable; a pod that fails it is removed from the Service |
 
 ## Worker identity

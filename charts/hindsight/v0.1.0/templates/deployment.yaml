@@ -5,6 +5,9 @@
 {{- if and $nfs (not (and .Values.storage.nfs.hostname .Values.storage.nfs.path)) }}
 {{- fail "Storage Type NFS requires the NFS Server's Hostname and Path" }}
 {{- end }}
+{{- if and $nfs (gt (int (.Values.replicaCount | default 1)) 1) }}
+{{- fail "The embedded Postgres (pg0) is a single writer: replicaCount must be 1 when storage.type is NFS, otherwise multiple pods share one PostgreSQL data directory and shut each other down via postmaster.pid" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,6 +15,13 @@ metadata:
   labels:
     {{- include "hindsight.labels" . | nindent 4 }}
 spec:
+  # pg0's data directory is shared via NFS. A rolling update would start the
+  # replacement pod while the old one is still running, so two PostgreSQL
+  # instances would fight over the same postmaster.pid - and each one shuts
+  # the other down. Recreate terminates the old pod (database included) before
+  # the replacement is created.
+  strategy:
+    type: Recreate
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
@@ -31,6 +41,14 @@ spec:
         {{- end }}
     spec:
       automountServiceAccountToken: false
+
+      # start-all.sh traps SIGTERM and shuts down gracefully: it drains in-flight
+      # worker tasks (~45s worst case), then flushes pg0's WAL and checkpoints,
+      # waiting up to 60s in total. The default 30s grace SIGKILLs the pod
+      # mid-shutdown and leaves the embedded Postgres in "not properly shut
+      # down" state with a stale postmaster.pid - the exact condition that
+      # breaks the next startup. 90s covers the script's timeout with margin.
+      terminationGracePeriodSeconds: 90
 
       {{- if $nfs }}
       # Creates the release directory on the NFS share and fixes its
@@ -85,15 +103,31 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 60
-          # /health/live is in-process only (never touches the database), so a slow
-          # or unreachable database does not restart the pod.
+          # /health/live alone cannot catch the failure mode that matters here:
+          # the embedded Postgres dying inside a still-running API process
+          # (observed after an unclean pod termination). The pod then sits
+          # not-ready forever, because only a pod restart brings the database
+          # back. So liveness checks the database too: pg_isready (bundled by
+          # the image under pg0/installation) plus the API health endpoint via
+          # the image's own http_probe module. This deviates from the usual
+          # "liveness must not touch the database" rule on purpose - here the
+          # database lives in the pod, so restarting the pod is the only fix.
+          # The startup probe above holds liveness back until first boot has
+          # finished, so a slow model download never restarts the pod.
           livenessProbe:
-            httpGet:
-              path: /health/live
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  cd /app/api;
+                  PGBIN=$(ls -d {{ .Values.storage.mountPath }}/installation/*/bin 2>/dev/null | head -n 1);
+                  PIDFILE=$(ls {{ .Values.storage.mountPath }}/instances/*/data/postmaster.pid 2>/dev/null | head -n 1);
+                  PGPORT=$(sed -n '4p' "$PIDFILE" 2>/dev/null);
+                  "$PGBIN/pg_isready" -q -h 127.0.0.1 -p "${PGPORT:-5432}"
+                  && python3 -m hindsight_api.http_probe http://127.0.0.1:8888/health/live 5
+            periodSeconds: 30
+            timeoutSeconds: 10
             failureThreshold: 3
           # /health verifies the database is reachable: a pod that cannot reach it
           # is taken out of the Service until it recovers.

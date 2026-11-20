@@ -1,3 +1,6 @@
+# The embedded Postgres (pg0) is a single writer: keep this at 1. The chart
+# refuses to render with storage.type=NFS and more than one replica, because
+# all pods would share one PostgreSQL data directory.
 replicaCount: 1
 
 image:

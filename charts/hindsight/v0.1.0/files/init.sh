@@ -11,6 +11,15 @@ data_dir="$release_dir/$data_subdir"
 mkdir -p "$data_dir"
 
 if [ -d "$data_dir" ]; then
+	# A hard pod kill (node crash, OOM, kubelet grace expiry) leaves a stale
+	# postmaster.pid behind. PostgreSQL recovers from it, but the recorded PID
+	# belongs to the previous container's PID namespace and may collide with a
+	# live PID in this one, which can trick a freshly started postmaster into
+	# shutting itself down. With the Recreate strategy and replicaCount=1 no
+	# other pod can be using the data directory while this runs, so any
+	# pidfile found here is stale by definition.
+	find "$data_dir" -maxdepth 3 -name postmaster.pid -type f -print -delete 2>/dev/null
+
 	echo "Permission before:"
 	ls -ld "$data_dir/"
 
