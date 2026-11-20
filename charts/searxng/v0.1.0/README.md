@@ -158,9 +158,13 @@ Notes:
   lives in the chart's ConfigMap), but cannot be combined with
   `searxng.settingsYml` - set `search.formats` inside your own file
   instead.
-- The rendered file is mounted over `/etc/searxng/settings.yml`, so with
-  `storage.type=NFS` it overlays the copy on the share and the entrypoint
-  never writes its own while any format is enabled.
+- The rendered file takes the place of the entrypoint-generated one:
+  without NFS it is mounted into the container; with `storage.type=NFS`
+  the init container writes it to `<share>/<release>/config/settings.yml`
+  at every pod start. The first line of that file is a `managed-by` marker:
+  hand edits to it are overwritten while a format (or `searxng.settingsYml`)
+  is enabled, and turning them all off makes the init container remove the
+  marked file so the entrypoint regenerates its default.
 
 ```bash
 helm upgrade searxng charts/searxng/v0.1.0 -n <namespace> --reuse-values \
@@ -193,9 +197,11 @@ Two notes:
 - The docker-compose style `./data` mount (`/var/cache/searxng`) has no
   equivalent in this chart: no application code writes there in this release.
 - When `searxng.settingsYml` is set, or any extra search output format is
-  enabled, the chart-rendered file overlays
-  `<share>/<release>/config/settings.yml`, so the entrypoint never writes
-  its own copy to the share.
+  enabled, the chart renders its own `settings.yml` and the init container
+  writes it to `<share>/<release>/config/settings.yml` at every pod start
+  (its first line is a `managed-by` marker - hand edits are overwritten).
+  Turn all settings sources off and the init container removes the marked
+  file, so the entrypoint regenerates its default.
 
 ## Extra environment variables
 
@@ -240,7 +246,9 @@ A default install logs a few lines that look alarming but are fine:
 - `"/etc/searxng/settings.yml" does not exist, creating from template...` -
   the entrypoint generating its default settings file. Without NFS this
   appears on every pod start; with `storage.type=NFS` it appears once and
-  the file then lives on the share.
+  the file then lives on the share (not at all while a chart-rendered
+  settings source is enabled - the init container already provides the
+  file).
 
 ## Manual uninstall
 

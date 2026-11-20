@@ -29,7 +29,8 @@ searxng:
   # Output formats the search endpoint offers on top of the always-on html
   # (json enables the JSON search API). There is no env var for this
   # setting: enabling any of them makes the chart render its own
-  # settings.yml into its ConfigMap (see README). Cannot be combined with a
+  # settings.yml - mounted from its ConfigMap, or written onto the NFS
+  # share when storage.type=NFS (see README). Cannot be combined with a
   # custom settingsYml - set search.formats there instead.
   searchFormats:
     json: false

@@ -73,6 +73,11 @@ spec:
       {{- if $nfs }}
       # Creates the release directory on the NFS share and fixes its
       # permissions, so the subPath mount in the main container can start.
+      # In render mode it also writes the chart-managed settings.yml onto
+      # the share; in clean mode it removes a previously rendered one, so
+      # the entrypoint regenerates its default. The marker line inside the
+      # file is what tells them apart from a hand-edited or
+      # entrypoint-generated file.
       initContainers:
         - name: prepare-nfs-dirs
           image: busybox:1.35.0
@@ -80,7 +85,7 @@ spec:
           command:
             - /bin/sh
             - -c
-            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}'
+            - cp /scripts/init.sh /scripts-w/init.sh && chmod +x /scripts-w/init.sh && /bin/sh /scripts-w/init.sh '{{ $fullName }}' {{ if $settingsMount }}render /scripts-src/settings.yml{{ else }}clean{{ end }}
           volumeMounts:
             - name: vol-{{ $fullName }}-nfs
               mountPath: /tmp_mount
@@ -90,6 +95,12 @@ spec:
               readOnly: false
             - name: vol-empty-tmp
               mountPath: /scripts-w
+            {{- if $settingsMount }}
+            - name: vol-settings-src
+              mountPath: /scripts-src/settings.yml
+              subPath: settings.yml
+              readOnly: true
+            {{- end }}
       {{- end }}
 
       {{- with .Values.imagePullSecrets }}
@@ -164,15 +175,15 @@ spec:
           volumeMounts:
             {{- if $nfs }}
             # /etc/searxng is fixed by the image - the app reads its config
-            # only from there.
+            # only from there. With a chart-rendered settings.yml the init
+            # container has already placed it on the share.
             - mountPath: /etc/searxng
               name: vol-{{ $fullName }}-nfs
               subPath: {{ $fullName }}/config
             {{- end }}
-            {{- if $settingsMount }}
-            # Nested over the NFS share: the chart-rendered file takes the
-            # place of the generated one, and the entrypoint never writes its
-            # own copy to the share.
+            {{- if and $settingsMount (not $nfs) }}
+            # Without NFS there is no share to write to - mount the rendered
+            # file directly into the container instead.
             - mountPath: /etc/searxng/settings.yml
               name: vol-config-file
               subPath: settings.yml
@@ -192,15 +203,23 @@ spec:
             name: {{ $fullName }}-configs
         - name: vol-empty-tmp
           emptyDir: {}
-        {{- end }}
         {{- if $settingsMount }}
+        - name: vol-settings-src
+          {{- if $settingsFromSecret }}
+          secret:
+            secretName: {{ $secretName }}
+          {{- else }}
+          configMap:
+            name: {{ $fullName }}-configs
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if and $settingsMount (not $nfs) }}
         - name: vol-config-file
           {{- if $settingsFromSecret }}
           secret:
             secretName: {{ $secretName }}
           {{- else }}
-          # Formats fragment rendered by the chart - not secret, so it lives
-          # in the ConfigMap and works with any Credentials Source.
           configMap:
             name: {{ $fullName }}-configs
           {{- end }}
