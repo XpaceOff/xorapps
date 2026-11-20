@@ -20,6 +20,21 @@ searxng:
   # SEARXNG_SECRET: signs sessions and protects against CSRF. Required when
   # secretSource=create. Generate with: openssl rand -hex 32
   secret: ""
+  # SEARXNG_CONTACT_URL: identifies your instance to the wikipedia, wikidata
+  # and openstreetmap APIs - those engines refuse to load without it. When
+  # enabled, the email below is passed as mailto:<email>.
+  contactUrl:
+    enabled: false
+    email: ""
+  # Output formats the search endpoint offers on top of the always-on html
+  # (json enables the JSON search API). There is no env var for this
+  # setting: enabling any of them makes the chart render its own
+  # settings.yml (see README). Not supported with an existing Secret or a
+  # custom settingsYml - set search.formats there instead.
+  searchFormats:
+    json: false
+    csv: false
+    rss: false
   # SEARXNG_BASE_URL: the absolute URL SearXNG advertises for itself
   # (redirects, opensearch plugin). Empty = derived from the ingress
   # hostname; omitted when there is no ingress, in which case SearXNG
@@ -72,14 +87,19 @@ ingress:
   hostPathType: Prefix
 
 storage:
-  # SearXNG keeps only a disposable cache (/var/cache/searxng) - 'None' is
-  # fine and the cache lives in the pod's ephemeral storage. 'NFS' keeps the
-  # cache directory on an NFS share instead.
+  # Mount an NFS share at /etc/searxng so the settings.yml the container
+  # entrypoint generates on first start persists across pod restarts and can
+  # be edited directly on the share (extra files such as limiter.toml can be
+  # dropped next to it). 'None' keeps /etc/searxng in the pod's ephemeral
+  # storage - settings.yml is then regenerated on every start, which is safe
+  # because SEARXNG_SECRET and SEARXNG_BASE_URL come from the env anyway.
+  # The compose-style ./data mount has no equivalent: no application code
+  # writes to /var/cache/searxng in this release.
   type: None
   nfs:
     hostname: ""
     path: ""
-  mountPath: /var/cache/searxng
+  mountPath: /etc/searxng
 
 imagePullSecrets: []
 nameOverride: ""

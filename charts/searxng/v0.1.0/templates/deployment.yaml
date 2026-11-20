@@ -2,7 +2,12 @@
 {{- $secretName := printf "%s-config" $fullName -}}
 {{- if eq .Values.secretSource "existing" }}{{- $secretName = .Values.existingSecret -}}{{- end }}
 {{- $nfs := and (eq .Values.storage.type "NFS") .Values.storage.nfs.hostname .Values.storage.nfs.path -}}
-{{- $settingsMount := and (eq .Values.secretSource "create") .Values.searxng.settingsYml -}}
+{{- $formatsExtra := or .Values.searxng.searchFormats.json .Values.searxng.searchFormats.csv .Values.searxng.searchFormats.rss -}}
+{{- $settingsMount := and (eq .Values.secretSource "create") (or .Values.searxng.settingsYml $formatsExtra) -}}
+{{- $contactUrl := "" -}}
+{{- if and .Values.searxng.contactUrl.enabled .Values.searxng.contactUrl.email -}}
+{{- $contactUrl = printf "mailto:%s" .Values.searxng.contactUrl.email -}}
+{{- end -}}
 {{- $scheme := "http" -}}
 {{- $publicHost := "" -}}
 {{- if .Values.ingress.enabled -}}
@@ -120,6 +125,13 @@ spec:
             - name: SEARXNG_BASE_URL
               value: {{ $baseUrl | quote }}
             {{- end }}
+            {{- if $contactUrl }}
+            # The wikipedia, wikidata and openstreetmap engines refuse to load
+            # without a contact URL - they must identify the client to the
+            # upstream API. Overrides general.contact_url from settings.yml.
+            - name: SEARXNG_CONTACT_URL
+              value: {{ $contactUrl | quote }}
+            {{- end }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -129,26 +141,24 @@ spec:
 
           {{- if or $nfs $settingsMount }}
           volumeMounts:
+            {{- if $nfs }}
+            - mountPath: {{ .Values.storage.mountPath }}
+              name: vol-{{ $fullName }}-nfs
+              subPath: {{ $fullName }}/config
+            {{- end }}
             {{- if $settingsMount }}
+            # Nested over the NFS share: the chart-rendered file takes the
+            # place of the generated one, and the entrypoint never writes its
+            # own copy to the share.
             - mountPath: /etc/searxng/settings.yml
               name: vol-config-file
               subPath: settings.yml
               readOnly: true
             {{- end }}
-            {{- if $nfs }}
-            - mountPath: {{ .Values.storage.mountPath }}
-              name: vol-{{ $fullName }}-nfs
-              subPath: {{ $fullName }}/cache
-            {{- end }}
           {{- end }}
 
       {{- if or $nfs $settingsMount }}
       volumes:
-        {{- if $settingsMount }}
-        - name: vol-config-file
-          secret:
-            secretName: {{ $secretName }}
-        {{- end }}
         {{- if $nfs }}
         - name: vol-{{ $fullName }}-nfs
           nfs:
@@ -159,6 +169,11 @@ spec:
             name: {{ $fullName }}-configs
         - name: vol-empty-tmp
           emptyDir: {}
+        {{- end }}
+        {{- if $settingsMount }}
+        - name: vol-config-file
+          secret:
+            secretName: {{ $secretName }}
         {{- end }}
       {{- end }}
 

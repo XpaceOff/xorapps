@@ -44,6 +44,44 @@ questions:
     group: "SearXNG Settings"
     show_if: "secretSource=create"
 
+  - variable: searxng.contactUrl.enabled
+    label: "Set a contact URL"
+    description: "SEARXNG_CONTACT_URL: identifies your instance to the wikipedia, wikidata and openstreetmap APIs - those engines do not load without it. Turn on and enter an address you actually read."
+    type: boolean
+    required: false
+    default: false
+    group: "SearXNG Settings"
+  - variable: searxng.contactUrl.email
+    label: "Contact email"
+    description: "Passed to the engines as mailto:<this address>."
+    type: string
+    required: false
+    default: ""
+    group: "SearXNG Settings"
+    show_if: "searxng.contactUrl.enabled=true"
+
+  - variable: searxng.searchFormats.json
+    label: "JSON output"
+    description: "Adds json to search.formats - enables the JSON search API (e.g. GET /search?q=searxng&format=json). Off by default."
+    type: boolean
+    required: false
+    default: false
+    group: "SearXNG Settings"
+  - variable: searxng.searchFormats.csv
+    label: "CSV output"
+    description: "Adds csv to search.formats - results as a comma-separated values download."
+    type: boolean
+    required: false
+    default: false
+    group: "SearXNG Settings"
+  - variable: searxng.searchFormats.rss
+    label: "RSS output"
+    description: "Adds rss to search.formats - results as an RSS feed."
+    type: boolean
+    required: false
+    default: false
+    group: "SearXNG Settings"
+
   #  ________________________________________________________
   # |_______________________ Ingress _______________________|
   - variable: ingress.enabled
@@ -128,7 +166,7 @@ questions:
   # |_______________________ Storage _______________________|
   - variable: storage.type
     label: "Storage Type"
-    description: "SearXNG keeps only a disposable cache - 'None' is fine. 'NFS' keeps /var/cache/searxng on an NFS share."
+    description: "NFS mounts /etc/searxng on an NFS share: the settings.yml the container generates on first start persists across pod restarts and can be edited directly on the share. 'None' keeps it in the pod's ephemeral storage (regenerated on each start, which is safe - the secret and base URL come from the env)."
     type: enum
     required: true
     default: "None"
